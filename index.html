@@ -365,9 +365,9 @@ function bind(panel,d){
       const c=ds.charms[Number(e.target.dataset.charm)],f=e.target.dataset.f;
       c[f]=Math.max(0,Number(e.target.value||0)); save(); render();
     }));
-    panel.querySelectorAll('[data-charmdel]').forEach(b=>b.addEventListener('click',()=>{const i=Number(b.dataset.charmdel); if(i===0) ds.charms[0]=freshCharm(); else ds.charms.splice(i,1); save();render();}));
+    panel.querySelectorAll('[data-charmdel]').forEach(b=>b.addEventListener('click',()=>{const i=Number(b.dataset.charmdel); if(i===0) ds.charms[0]={to:0}; else ds.charms.splice(i,1); save();render();}));
     panel.querySelector('[data-addcharm]').addEventListener('click',()=>{ds.charms.push(freshCharm());save();render();});
-    panel.querySelector('[data-clearcharm]').addEventListener('click',()=>{if(!confirm('이 날짜의 보석 줄을 모두 지울까요?')) return; ds.charms=[freshCharm()];save();render();});
+    panel.querySelector('[data-clearcharm]').addEventListener('click',()=>{if(!confirm('이 날짜의 보석 줄을 모두 지울까요?')) return; ds.charms=[{to:0}];save();render();});
   }
   if(DAYS[d-1].troops){
     panel.querySelectorAll('[data-troop]').forEach(el=>el.addEventListener(el.tagName==='SELECT'?'change':'input',e=>{
