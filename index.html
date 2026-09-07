@@ -75,9 +75,8 @@ h1{margin:2px 0 0;font-size:20px;font-weight:600;letter-spacing:-.01em;text-wrap
 .row.active{background:var(--accent-soft)}
 .hot{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.06em;color:var(--accent-ink);border:1px solid var(--accent);border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:middle;line-height:16px}
 
-input[type=number],select{font:inherit;font-size:16px;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;width:96px;text-align:right}
-input[type=number]{font-family:"Barlow Condensed","IBM Plex Sans KR",sans-serif;font-weight:600;font-size:18px;font-variant-numeric:tabular-nums}
-input[type=number]::-webkit-inner-spin-button{opacity:1}
+input.n,select{font:inherit;font-size:16px;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;width:96px;text-align:right}
+input.n{font-family:"Barlow Condensed","IBM Plex Sans KR",sans-serif;font-weight:600;font-size:18px;font-variant-numeric:tabular-nums}
 select{text-align:left;width:auto;padding:7px 6px 7px 8px;font-family:"IBM Plex Sans KR",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:14px;font-weight:500;line-height:1.3}
 .unit{font-size:12px;color:var(--muted);min-width:1.5em}
 .time{display:flex;gap:4px;align-items:center}
@@ -290,6 +289,7 @@ function load(){
 function save(){
   try{localStorage.setItem(KEY,JSON.stringify(state));document.getElementById('saved').textContent='자동 저장됨 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});}catch(e){}
 }
+const num=v=>Math.max(0,Number(String(v??'').replace(/[^\d.]/g,''))||0);
 const fmt=n=>Math.round(n).toLocaleString('ko-KR');
 const fmt1=n=>(Math.round(n*10)/10).toLocaleString('ko-KR',{maximumFractionDigits:1});
 const mult=()=>1+Number(state.bonus||0)/100;
@@ -338,13 +338,13 @@ function rowHTML(d,id,hot){
   if(it.time){
     const t=timeParts(q);
     ctl=`<div class="time">
-      <input type="number" min="0" inputmode="numeric" data-time="${id}" data-part="d" value="${t.d||''}" placeholder="0"><span class="unit">일</span>
-      <input type="number" min="0" inputmode="numeric" data-time="${id}" data-part="h" value="${t.h||''}" placeholder="0"><span class="unit">시간</span>
-      <input type="number" min="0" inputmode="numeric" data-time="${id}" data-part="m" value="${t.m||''}" placeholder="0"><span class="unit">분</span></div>`;
+      <input type="text" class="n" inputmode="numeric" data-time="${id}" data-part="d" value="${t.d||''}" placeholder="0"><span class="unit">일</span>
+      <input type="text" class="n" inputmode="numeric" data-time="${id}" data-part="h" value="${t.h||''}" placeholder="0"><span class="unit">시간</span>
+      <input type="text" class="n" inputmode="numeric" data-time="${id}" data-part="m" value="${t.m||''}" placeholder="0"><span class="unit">분</span></div>`;
   }else if(it.per){
-    ctl=`<input type="number" min="0" step="${it.per}" inputmode="numeric" data-q="${id}" value="${q||''}" placeholder="0" style="width:120px">`;
+    ctl=`<input type="text" class="n" inputmode="numeric" data-q="${id}" value="${q||''}" placeholder="0" style="width:120px">`;
   }else{
-    ctl=`<div class="stepper"><button type="button" data-step="${id}" data-dir="-1" aria-label="하나 빼기">−</button><input type="number" min="0" inputmode="numeric" data-q="${id}" value="${q||''}" placeholder="0"><button type="button" data-step="${id}" data-dir="1" aria-label="하나 더하기">+</button></div><span class="unit">${it.unit||''}</span>`;
+    ctl=`<div class="stepper"><button type="button" data-step="${id}" data-dir="-1" aria-label="하나 빼기">−</button><input type="text" class="n" inputmode="numeric" data-q="${id}" value="${q||''}" placeholder="0"><button type="button" data-step="${id}" data-dir="1" aria-label="하나 더하기">+</button></div><span class="unit">${it.unit||''}</span>`;
   }
   const rate=it.time?`<span class="num">${fmt1(up(it.pts))}</span>점 / 1분`:it.per?`<span class="num">${fmt1(up(it.pts))}</span>점 / ${it.per.toLocaleString('ko-KR')}`:`<span class="num">${fmt1(up(it.pts))}</span>점 / 1${it.unit||''}`;
   return `<div class="row${q?' active':''}">
@@ -363,7 +363,7 @@ function troopsHTML(){
         <select data-troop="${i}" data-f="kind"><option value="promote"${t.kind==='promote'?' selected':''}>승급</option><option value="train"${t.kind==='train'?' selected':''}>훈련</option></select>
         ${t.kind==='promote'?`<select data-troop="${i}" data-f="from">${opts(t.from)}</select><span class="unit">→</span>`:''}
         <select data-troop="${i}" data-f="to">${opts(t.to)}</select>
-        <input type="number" min="0" inputmode="numeric" data-troop="${i}" data-f="n" value="${t.n||''}" placeholder="0" style="width:110px"><span class="unit">명</span>
+        <input type="text" class="n" inputmode="numeric" data-troop="${i}" data-f="n" value="${t.n||''}" placeholder="0" style="width:110px"><span class="unit">명</span>
         <button type="button" class="x" data-troopdel="${i}" aria-label="이 병력 줄 삭제">✕ 삭제</button>
       </div>
       <div class="got"><span class="rate">${rate}</span> &nbsp;→&nbsp; <span class="num">${fmt(p)}</span>점</div>
@@ -417,7 +417,7 @@ function furnaceHTML(d){
 function speedHTML(d){
   const ds=state.days[d], tc=buildsCost(d), pct=speedTotal(), real=tc.t/(1+pct/100), mins=Math.ceil(real/60);
   return `<div class="section"><h3>건설 속도 버프 · 합계 +${fmt1(pct)}%</h3><div class="list">
-    <div class="row troops-like"><div class="speed-grid">${SPEED_KEYS.map(([k,label])=>`<label><span>${label}</span><span class="pct"><input type="number" min="0" step="0.5" inputmode="decimal" data-speed="${k}" value="${(state.speed[k]||'')}" placeholder="0"><em>%</em></span></label>`).join('')}</div></div>
+    <div class="row troops-like"><div class="speed-grid">${SPEED_KEYS.map(([k,label])=>`<label><span>${label}</span><span class="pct"><input type="text" class="n" inputmode="decimal" data-speed="${k}" value="${(state.speed[k]||'')}" placeholder="0"><em>%</em></span></label>`).join('')}</div></div>
     ${tc.t?`<div class="bsum"><div class="speed-res"><div><small>기본 건설 시간</small><b>${fmtDur(tc.t)}</b></div><div><small>버프 적용 후</small><b>${fmtDur(real)}</b></div><div><small>필요 건설 가속</small><b>${fmt(mins)}분</b></div></div>
     <div class="foot-btns"><button type="button" class="mini" data-applyspeed="${d}">${Number(ds.q.spConstruction||0)===mins?'✓ 건설 가속 칸에 들어가 있음':'아래 건설 가속 아이템 칸에 넣기'}</button></div></div>`:`<div class="list-foot"><span class="got">위에서 건물을 고르면 이 날짜의 건설 시간과 필요한 가속을 계산합니다</span></div>`}
   </div>
@@ -440,7 +440,7 @@ function bindFurnace(panel,d){
     });
   });
   panel.querySelectorAll('[data-builddel]').forEach(x=>x.addEventListener('click',()=>{const i=Number(x.dataset.builddel); if(i===0) ds.builds[0]={b:ds.builds[0].b,from:0,to:0}; else ds.builds.splice(i,1); save(); render();}));
-  panel.querySelectorAll('input[data-speed]').forEach(el=>el.addEventListener('input',e=>{state.speed[e.target.dataset.speed]=Math.max(0,Number(e.target.value||0)); save(); softUpdate();}));
+  panel.querySelectorAll('input[data-speed]').forEach(el=>el.addEventListener('input',e=>{state.speed[e.target.dataset.speed]=num(e.target.value); save(); softUpdate();}));
   const ap=panel.querySelector('[data-applyspeed]'); if(ap) ap.addEventListener('click',()=>{const tc=buildsCost(d); const mins=Math.ceil(tc.t/(1+speedTotal()/100)/60); if(ds.q.spConstruction&&Number(ds.q.spConstruction)!==mins&&!confirm('이미 입력된 건설 가속 시간을 덮어쓸까요?')) return; ds.q.spConstruction=mins; save(); render();});
   const add=panel.querySelector('[data-addbuild]'); if(add) add.addEventListener('click',()=>{const used=new Set(ds.builds.map(o=>o.b)); const next=BUILD_KEYS.find(k=>!used.has(k)); if(!next) return; ds.builds.push({b:next,from:0,to:0});save();render();});
   const clr=panel.querySelector('[data-clearbuild]'); if(clr) clr.addEventListener('click',()=>{ if(!confirm('이 날짜의 건물 줄을 모두 초기화할까요? (첫 줄은 남고 나머지는 삭제됩니다)')) return; ds.builds=[{b:(ds.builds[0]&&ds.builds[0].b)||'furnace',from:0,to:0}]; save(); render(); });
@@ -464,10 +464,10 @@ function render(){
 }
 function bind(panel,d){
   const ds=state.days[d];
-  panel.querySelectorAll('input[data-q]').forEach(inp=>inp.addEventListener('input',e=>{ds.q[e.target.dataset.q]=Math.max(0,Number(e.target.value||0));save();softUpdate();}));
+  panel.querySelectorAll('input[data-q]').forEach(inp=>inp.addEventListener('input',e=>{ds.q[e.target.dataset.q]=num(e.target.value);save();softUpdate();}));
   panel.querySelectorAll('input[data-time]').forEach(inp=>inp.addEventListener('input',e=>{
     const id=e.target.dataset.time; const parts={};
-    panel.querySelectorAll(`input[data-time="${id}"]`).forEach(x=>parts[x.dataset.part]=Math.max(0,Number(x.value||0)));
+    panel.querySelectorAll(`input[data-time="${id}"]`).forEach(x=>parts[x.dataset.part]=num(x.value));
     ds.q[id]=parts.d*1440+parts.h*60+parts.m; save(); softUpdate();
   }));
   panel.querySelectorAll('button[data-step]').forEach(b=>b.addEventListener('click',()=>{
@@ -477,7 +477,7 @@ function bind(panel,d){
   if(DAYS[d-1].charm){
     panel.querySelectorAll('[data-charm]').forEach(el=>el.addEventListener(el.tagName==='SELECT'?'change':'input',e=>{
       const c=ds.charms[Number(e.target.dataset.charm)],f=e.target.dataset.f;
-      c[f]=Math.max(0,Number(e.target.value||0)); save(); render();
+      c[f]=num(e.target.value); save(); render();
     }));
     // '선택 안 함' 상태에서 셀렉트를 누르면 Lv.12로 미리 맞춰 목록이 Lv.12 근처에서 열리게 함
     panel.querySelectorAll('select[data-charm][data-f="to"]').forEach(el=>{
@@ -492,7 +492,7 @@ function bind(panel,d){
   if(DAYS[d-1].troops){
     panel.querySelectorAll('[data-troop]').forEach(el=>el.addEventListener(el.tagName==='SELECT'?'change':'input',e=>{
       const t=ds.troops[Number(e.target.dataset.troop)],f=e.target.dataset.f;
-      t[f]=f==='kind'?e.target.value:Number(e.target.value||0); save(); f==='n'?softUpdate():render();
+      t[f]=f==='kind'?e.target.value:num(e.target.value); save(); f==='n'?softUpdate():render();
     }));
     panel.querySelectorAll('[data-troopdel]').forEach(b=>b.addEventListener('click',()=>{ds.troops.splice(Number(b.dataset.troopdel),1);save();render();}));
     panel.querySelector('#addTroop').addEventListener('click',()=>{ds.troops.push({kind:'promote',from:9,to:10,n:0});save();render();});
@@ -503,9 +503,9 @@ function softUpdate(){
   const d=state.tab,panel=document.getElementById('panel'),day=DAYS[d-1];
   const scroll=window.scrollY, active=document.activeElement;
   const sel=active&&active.dataset?(active.dataset.q?`input[data-q="${active.dataset.q}"]`:active.dataset.time?`input[data-time="${active.dataset.time}"][data-part="${active.dataset.part}"]`:active.dataset.troop!==undefined?`[data-troop="${active.dataset.troop}"][data-f="${active.dataset.f}"]`:active.dataset.charm!==undefined?`[data-charm="${active.dataset.charm}"][data-f="${active.dataset.f}"]`:active.dataset.speed?`input[data-speed="${active.dataset.speed}"]`:null):null;
-  const pos=active&&active.selectionStart;
+  const pos=active&&active.selectionStart, raw=active&&active.value;
   render();
-  if(sel){const el=panel.querySelector(sel); if(el){el.focus({preventScroll:true}); try{el.setSelectionRange(pos,pos);}catch(e){}}}
+  if(sel){const el=panel.querySelector(sel); if(el){ if(raw!==undefined&&el.tagName==='INPUT') el.value=raw; el.focus({preventScroll:true}); try{el.setSelectionRange(pos,pos);}catch(e){}}}
   window.scrollTo(0,scroll);
 }
 const bonusEl=document.getElementById('bonus');
