@@ -107,7 +107,8 @@ select{text-align:left;width:auto;padding:7px 6px 7px 8px;font-family:"IBM Plex 
 .fsum div{background:var(--surface-2);border:1px solid var(--line-soft);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:2px}
 .fsum small{font-size:11px;color:var(--muted);letter-spacing:.04em}
 .fsum b{font-size:22px;font-weight:700;color:var(--accent-ink);line-height:1}
-.fsum span{font-size:11px;color:var(--muted)}
+.fsum span{font-size:11px;color:var(--muted);line-height:1.3}
+@media (max-width:480px){.fsum{grid-template-columns:1fr}}
 .troops-like{grid-template-columns:1fr}
 .hint-p{margin:8px 2px 0;font-size:12px;color:var(--muted);line-height:1.5}
 .list-foot{padding:10px 14px;border-top:1px solid var(--line-soft);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
@@ -155,6 +156,7 @@ select{text-align:left;width:auto;padding:7px 6px 7px 8px;font-family:"IBM Plex 
     <p><b>가속</b> · 일·시간·분을 넣으면 분 단위로 환산해 1분당 30점으로 계산합니다.</p>
     <p><b>병력 승급</b> · 승급 점수는 목표 등급 점수에서 원래 등급 점수를 뺀 값입니다. 훈련은 4일차에 <em>완료</em>되어야 점수가 붙습니다.</p>
     <p><b>영주 보석</b> · 게임의 "영주 보석 최고 평점 1포인트 증가 = 70점"을 레벨별 평점으로 풀어 계산합니다. 레벨별 평점은 게임 안 "영주 보석 평점 상세정보"(Lv.1~18, 하위 단계 포함)와 대조해 확인했습니다.</p>
+    <p><b>용광로 비용</b> · 1·2·5일차의 불의 수정·제련된 불의 수정 점수는 용광로 현재→목표 레벨로 계산합니다(8불부터, 각 정레벨 5단계). 8불→10불 = 불의 수정 2,835개 · 제련 600개.</p>
     <p><b>채집</b> · 채집량 자체를 입력하면 고기·나무 1,000당, 석탄 200당, 철 50당 2점으로 계산합니다.</p>
     <p>입력값은 이 브라우저에 자동 저장됩니다.</p>
   </section>
@@ -221,20 +223,21 @@ const FURNACE=[['30레벨',0,0],['30레벨-1',132,0],['30레벨-2',132,0],['30�
 const FURNACE_MIN=FURNACE.findIndex(x=>x[0]==='8불'); // 선택 목록은 8불부터
 const FURNACE_DEFAULT_FROM=FURNACE_MIN, FURNACE_DEFAULT_TO=FURNACE.findIndex(x=>x[0]==='10불');
 function furnaceCost(from,to){let fc=0,r=0,n=0;for(let i=from+1;i<=to&&i<FURNACE.length;i++){fc+=FURNACE[i][1];r+=FURNACE[i][2];n++;}return {fc,r,n};}
+function furnacePts(d){const f=state.days[d].furnace;if(!f||!f.to||f.to<=f.from) return 0;const c=furnaceCost(f.from,f.to);return c.fc*up(ITEMS.fireCrystal.pts)+c.r*up(ITEMS.refinedFC.pts);}
 const CHARM_DEFAULT=CHARM_LEVELS.findIndex(L=>L.name==='12')+1; // 기본 선택 Lv.12
 const freshCharm=()=>({to:CHARM_DEFAULT});
 const freshDay=d=>({q:{}, ...([1,2,5].includes(d)?{furnace:{from:FURNACE_DEFAULT_FROM,to:FURNACE_DEFAULT_TO}}:{}), ...(d===4?{troops:[{kind:'promote',from:9,to:10,n:0}]}:{}), ...([1,3,4].includes(d)?{charms:[freshCharm()]}:{})});
 const DAYS=[
   {n:1,ko:'도시 건설',en:'City Construction',
-   groups:[['점수 항목',['refinedFC','fireCrystal','fcShard','spConstruction','spResearch','spTraining','spExpert']]],charm:true,furnace:true},
+   groups:[['점수 항목',['fcShard','spConstruction','spResearch','spTraining','spExpert']]],charm:true,furnace:true},
   {n:2,ko:'연구',en:'Research Day',
-   groups:[['점수 항목',['fcShard','spResearch','luckyWheel','rareShard','epicShard','mythicShard','expertSigil','bookOfKnowledge','gatherMeat','gatherWood','gatherCoal','gatherIron','fireCrystal','refinedFC','spConstruction','spTraining','spExpert']]],furnace:true},
+   groups:[['점수 항목',['fcShard','spResearch','luckyWheel','rareShard','epicShard','mythicShard','expertSigil','bookOfKnowledge','gatherMeat','gatherWood','gatherCoal','gatherIron','spConstruction','spTraining','spExpert']]],furnace:true},
   {n:3,ko:'야수 처치',en:'Beast Slay',
    groups:[['점수 항목',['polarTerror','beast1','beast11','beast16','beast21','beast26','petScore','advWildMark','commonWildMark','luckyWheel','rareShard','epicShard','mythicShard','expertSigil','bookOfKnowledge','spExpert']]],charm:true},
   {n:4,ko:'영웅 성장',en:'Hero Development · 병사 훈련',
    groups:[['점수 항목',['mithril','widget','essenceStone']]],troops:true,charm:true},
   {n:5,ko:'전투력 부스트',en:'Power Boost',
-   groups:[['점수 항목',['mithril','widget','essenceStone','chiefGear','petScore','advWildMark','commonWildMark','refinedFC','fireCrystal','fcShard','spConstruction','spResearch','spTraining','spExpert']]],furnace:true},
+   groups:[['점수 항목',['mithril','widget','essenceStone','chiefGear','petScore','advWildMark','commonWildMark','fcShard','spConstruction','spResearch','spTraining','spExpert']]],furnace:true},
 ];
 
 const KEY='wos-svs-prep-v1';
@@ -268,6 +271,7 @@ function dayTotal(d){
   for(const [,ids] of day.groups) for(const id of ids) s+=itemPts(d,id);
   if(day.troops) for(const t of state.days[4].troops) s+=troopPts(t);
   if(day.charm) for(const c of (state.days[d].charms||[])) s+=charmPts(c);
+  if(day.furnace) s+=furnacePts(d);
   return s;
 }
 
@@ -349,32 +353,28 @@ function charmsHTML(d){
 }
 function furnaceHTML(d){
   const ds=state.days[d]; if(!ds.furnace) ds.furnace={from:FURNACE_DEFAULT_FROM,to:FURNACE_DEFAULT_TO};
-  const f=ds.furnace; if(f.from<FURNACE_MIN) f.from=FURNACE_MIN; if(f.to<=f.from) f.to=Math.min(FURNACE.length-1,f.from+1);
-  const c=furnaceCost(f.from,f.to), pt=mult();
-  const opts=(sel,min)=>FURNACE.map((x,i)=>i<min?'':`<option value="${i}"${sel===i?' selected':''}>${x[0]}</option>`).join('');
-  const groups=[]; for(let i=f.from+1;i<=f.to;i++){const name=FURNACE[i][0]; const target=name.includes('-')?null:name; let g=groups[groups.length-1]; if(!g||g.closed){g={start:FURNACE[i-1][0],fc:0,r:0,n:0,closed:false};groups.push(g);} g.fc+=FURNACE[i][1]; g.r+=FURNACE[i][2]; g.n++; g.last=name; if(target) g.closed=true;}
+  const f=ds.furnace; if(f.from<FURNACE_MIN) f.from=FURNACE_MIN; if(f.to&&f.to<=f.from) f.to=0;
+  const on=f.to>f.from, c=on?furnaceCost(f.from,f.to):{fc:0,r:0,n:0};
+  const fcPt=up(ITEMS.fireCrystal.pts), rPt=up(ITEMS.refinedFC.pts), fcTotal=c.fc*fcPt, rTotal=c.r*rPt, total=fcTotal+rTotal;
+  const opts=(sel,min,zero)=>(zero?`<option value="0"${!sel?' selected':''}>선택 안 함</option>`:'')+FURNACE.map((x,i)=>i<min?'':`<option value="${i}"${sel===i?' selected':''}>${x[0]}</option>`).join('');
+  const groups=[]; for(let i=f.from+1;on&&i<=f.to;i++){const name=FURNACE[i][0]; const target=name.includes('-')?null:name; let g=groups[groups.length-1]; if(!g||g.closed){g={start:FURNACE[i-1][0],fc:0,r:0,n:0,closed:false};groups.push(g);} g.fc+=FURNACE[i][1]; g.r+=FURNACE[i][2]; g.n++; g.last=name; if(target) g.closed=true;}
   const rows=groups.map(g=>`<div class="step"><span>${g.start} → ${g.last} (${g.n}단계)</span><span class="num">불수 ${fmt(g.fc)} · 제련 ${fmt(g.r)}</span></div>`).join('');
-  const pts=c.fc*ITEMS.fireCrystal.pts*pt + c.r*ITEMS.refinedFC.pts*pt;
-  const applied=Number(ds.q.fireCrystal||0)===c.fc&&Number(ds.q.refinedFC||0)===c.r;
-  return `<div class="section"><h3>용광로 비용 → 불의 수정 수량</h3><div class="list"><div class="row troops-like">
-    <div class="ctl charm-ctl" style="justify-content:flex-start;flex-wrap:wrap"><span class="lbl">현재</span><select data-furn="from">${opts(f.from,FURNACE_MIN)}</select><span class="lbl">→ 목표</span><select data-furn="to">${opts(f.to,FURNACE_MIN+1)}</select></div>
-    <div class="fsum"><div><small>불의 수정</small><b class="num">${fmt(c.fc)}</b><span>개</span></div><div><small>제련된 불의 수정</small><b class="num">${fmt(c.r)}</b><span>개</span></div><div><small>점수 환산</small><b class="num">${fmt(pts)}</b><span>점</span></div></div>
+  return `<div class="section"><h3>용광로 비용 · 불의 수정 ${fmt1(fcPt)}점 · 제련된 불의 수정 ${fmt1(rPt)}점</h3><div class="list"><div class="row troops-like${on?' active':''}">
+    <div class="ctl charm-ctl" style="justify-content:flex-start;flex-wrap:wrap"><span class="lbl">현재</span><select data-furn="from">${opts(f.from,FURNACE_MIN,false)}</select><span class="lbl">→ 목표</span><select data-furn="to">${opts(f.to,FURNACE_MIN+1,true)}</select><button type="button" class="x" data-furnreset="${d}" aria-label="용광로 선택 초기화">↺ 초기화</button></div>
     ${rows?`<div class="steps">${rows}</div>`:''}
-  </div><div class="list-foot"><span class="foot-btns"><button type="button" class="mini" data-furnapply="${d}">${applied?'✓ 아래 수량에 들어가 있음':'아래 불의 수정·제련 수량에 넣기'}</button></span></div></div></div>`;
+    <div class="fsum"><div><small>불의 수정</small><b class="num">${fmt(c.fc)}</b><span>개 × ${fmt1(fcPt)}점 = ${fmt(fcTotal)}점</span></div><div><small>제련된 불의 수정</small><b class="num">${fmt(c.r)}</b><span>개 × ${fmt1(rPt)}점 = ${fmt(rTotal)}점</span></div><div><small>용광로 합계</small><b class="num">${fmt(total)}</b><span>점</span></div></div>
+    ${on?'':'<div class="got">목표 레벨을 고르면 불의 수정과 제련된 불의 수정 점수가 한꺼번에 계산됩니다</div>'}
+  </div></div></div>`;
 }
 function bindFurnace(panel,d){
   const ds=state.days[d], f=ds.furnace;
   panel.querySelectorAll('select[data-furn]').forEach(el=>el.addEventListener('change',e=>{
     const k=e.target.dataset.furn; f[k]=Number(e.target.value);
-    if(k==='from'&&f.to<=f.from) f.to=Math.min(FURNACE.length-1,f.from+1);
-    if(k==='to'&&f.to<=f.from) f.from=Math.max(FURNACE_MIN,f.to-1);
+    if(k==='from'&&f.to&&f.to<=f.from) f.to=Math.min(FURNACE.length-1,f.from+1);
+    if(k==='to'&&f.to&&f.to<=f.from) f.from=Math.max(FURNACE_MIN,f.to-1);
     save(); render();
   }));
-  const b=panel.querySelector('[data-furnapply]'); if(b) b.addEventListener('click',()=>{
-    const c=furnaceCost(f.from,f.to), q=ds.q;
-    if((q.fireCrystal||q.refinedFC)&&(Number(q.fireCrystal||0)!==c.fc||Number(q.refinedFC||0)!==c.r)&&!confirm('이미 입력된 불의 수정 수량을 덮어쓸까요?')) return;
-    q.fireCrystal=c.fc; q.refinedFC=c.r; save(); render();
-  });
+  const b=panel.querySelector('[data-furnreset]'); if(b) b.addEventListener('click',()=>{ds.furnace={from:FURNACE_DEFAULT_FROM,to:0}; save(); render();});
 }
 function render(){
   renderTabs();
