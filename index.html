@@ -133,7 +133,7 @@ select{text-align:left;width:auto;padding-right:6px}
       <div class="total"><small>5일 합계</small><div class="num" id="grand">0</div></div>
     </div>
     <div class="tabs" role="tablist" id="tabs"></div>
-    <div class="bonus"><label for="bonus">발레리아 도움 보너스</label><span class="stepper"><button type="button" id="bonusDown" aria-label="4% 내리기">−</button><input id="bonus" type="number" min="0" max="100" step="4" inputmode="numeric"><button type="button" id="bonusUp" aria-label="4% 올리기">+</button></span><span class="unit">%</span><span class="hint">게임 점수표 위에 "획득하는 포인트 +N%"로 표시되는 값</span></div>
+    <div class="bonus"><label for="bonus">발레리아 도움 보너스</label><span class="stepper"><button type="button" id="bonusDown" aria-label="2% 내리기">−</button><input id="bonus" type="number" min="0" max="20" step="2" inputmode="numeric"><button type="button" id="bonusUp" aria-label="2% 올리기">+</button></span><span class="unit">%</span><span class="hint">게임 점수표 위 "획득하는 포인트 +N%" 값 · 2%씩 최대 20% (발레리아 없으면 0)</span></div>
   </header>
 
   <main id="panel"></main>
@@ -146,7 +146,7 @@ select{text-align:left;width:auto;padding-right:6px}
 
   <section class="note">
     <p><b>점수 기준</b> · 2026-09-07 게임 안 점수표 스크린샷(1·3·4·5일차)과 대조해 확인한 기본값입니다. 미스릴 144,000, 병사 1~11급 3·4·5·8·12·18·25·35·45·60·75점 모두 게임과 일치합니다. 2일차 항목은 해외 계산기 값이라 게임 화면과 대조가 필요합니다.</p>
-    <p><b>발레리아 보너스</b> · 게임은 모든 항목에 발레리아 도움 보너스(+8%, +20% 등)를 곱해서 보여줍니다. 위에서 본인 보너스를 맞추면 게임과 같은 숫자가 나옵니다.</p>
+    <p><b>발레리아 보너스</b> · 게임은 모든 항목에 발레리아 도움 보너스를 곱해서 보여줍니다. 보너스는 2%씩 올라 최대 20%입니다. 위에서 본인 보너스를 맞추면 게임과 같은 숫자가 나옵니다.</p>
     <p><b>가속</b> · 일·시간·분을 넣으면 분 단위로 환산해 1분당 30점으로 계산합니다.</p>
     <p><b>병력 승급</b> · 승급 점수는 목표 등급 점수에서 원래 등급 점수를 뺀 값입니다. 훈련은 4일차에 <em>완료</em>되어야 점수가 붙습니다.</p>
     <p><b>채집</b> · 채집량 자체를 입력하면 고기·나무 1,000당, 석탄 200당, 철 50당 2점으로 계산합니다.</p>
@@ -345,9 +345,9 @@ function softUpdate(){
 }
 const bonusEl=document.getElementById('bonus');
 function syncBonus(){bonusEl.value=Number(state.bonus||0);}
-bonusEl.addEventListener('input',e=>{state.bonus=Math.max(0,Number(e.target.value||0));save();render();});
-document.getElementById('bonusDown').onclick=()=>{state.bonus=Math.max(0,Number(state.bonus||0)-4);syncBonus();save();render();};
-document.getElementById('bonusUp').onclick=()=>{state.bonus=Math.min(100,Number(state.bonus||0)+4);syncBonus();save();render();};
+bonusEl.addEventListener('input',e=>{state.bonus=Math.min(20,Math.max(0,Number(e.target.value||0)));save();render();});
+document.getElementById('bonusDown').onclick=()=>{state.bonus=Math.max(0,Number(state.bonus||0)-2);syncBonus();save();render();};
+document.getElementById('bonusUp').onclick=()=>{state.bonus=Math.min(20,Number(state.bonus||0)+2);syncBonus();save();render();};
 syncBonus();
 document.getElementById('resetDay').onclick=()=>{
   const d=state.tab; if(!confirm(`${d}일차 입력을 모두 지울까요?`)) return;
