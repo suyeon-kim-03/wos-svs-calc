@@ -218,7 +218,8 @@ const CHARM_LEVELS=(()=>{
 const CHARM_PT=70;
 // 용광로 단계별 비용 [도달 레벨, 불의 수정, 제련된 불의 수정]. 30레벨→10불 총 11,610 / 870. 출처 wostools 건물 계산기 데이터(공략 가이드 구간 합계와 일치)
 const FURNACE=[['30레벨',0,0],['30레벨-1',132,0],['30레벨-2',132,0],['30레벨-3',132,0],['30레벨-4',132,0],['1불',132,0],['1불-1',158,0],['1불-2',158,0],['1불-3',158,0],['1불-4',158,0],['2불',158,0],['2불-1',238,0],['2불-2',238,0],['2불-3',238,0],['2불-4',238,0],['3불',238,0],['3불-1',280,0],['3불-2',280,0],['3불-3',280,0],['3불-4',280,0],['4불',280,0],['4불-1',335,0],['4불-2',335,0],['4불-3',335,0],['4불-4',335,0],['5불',335,0],['5불-1',200,10],['5불-2',200,10],['5불-3',200,10],['5불-4',200,10],['6불',100,20],['6불-1',240,15],['6불-2',240,15],['6불-3',240,15],['6불-4',240,15],['7불',120,30],['7불-1',240,20],['7불-2',240,20],['7불-3',240,20],['7불-4',240,20],['8불',120,40],['8불-1',280,30],['8불-2',280,30],['8불-3',280,30],['8불-4',280,30],['9불',140,60],['9불-1',350,70],['9불-2',350,70],['9불-3',350,70],['9불-4',350,70],['10불',175,140]];
-const FURNACE_DEFAULT_FROM=FURNACE.findIndex(x=>x[0]==='6불'), FURNACE_DEFAULT_TO=FURNACE.findIndex(x=>x[0]==='10불');
+const FURNACE_MIN=FURNACE.findIndex(x=>x[0]==='8불'); // 선택 목록은 8불부터
+const FURNACE_DEFAULT_FROM=FURNACE_MIN, FURNACE_DEFAULT_TO=FURNACE.findIndex(x=>x[0]==='10불');
 function furnaceCost(from,to){let fc=0,r=0,n=0;for(let i=from+1;i<=to&&i<FURNACE.length;i++){fc+=FURNACE[i][1];r+=FURNACE[i][2];n++;}return {fc,r,n};}
 const CHARM_DEFAULT=CHARM_LEVELS.findIndex(L=>L.name==='12')+1; // 기본 선택 Lv.12
 const freshCharm=()=>({to:CHARM_DEFAULT});
@@ -239,7 +240,7 @@ const DAYS=[
 const KEY='wos-svs-prep-v1';
 let state=load();
 function load(){
-  try{const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s&&s.days){ if(!s.bonusDefault20){s.bonus=20;s.bonusDefault20=true;} if(!s.furnace) s.furnace={from:FURNACE_DEFAULT_FROM,to:FURNACE_DEFAULT_TO}; for(const d of [1,3,4]){ if(!s.days[d].charms) s.days[d].charms=[freshCharm()]; s.days[d].charms=s.days[d].charms.map(c=>({to:Number(c.to||c.lv||0)})); } return s; }}catch(e){}
+  try{const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s&&s.days){ if(!s.bonusDefault20){s.bonus=20;s.bonusDefault20=true;} if(!s.furnace||s.furnace.from<FURNACE_MIN) s.furnace={from:FURNACE_DEFAULT_FROM,to:FURNACE_DEFAULT_TO}; for(const d of [1,3,4]){ if(!s.days[d].charms) s.days[d].charms=[freshCharm()]; s.days[d].charms=s.days[d].charms.map(c=>({to:Number(c.to||c.lv||0)})); } return s; }}catch(e){}
   return {tab:1,bonus:20,bonusDefault20:true,furnace:{from:FURNACE_DEFAULT_FROM,to:FURNACE_DEFAULT_TO},days:{1:freshDay(1),2:freshDay(2),3:freshDay(3),4:freshDay(4),5:freshDay(5)}};
 }
 function save(){
@@ -352,6 +353,7 @@ function charmsHTML(d){
 }
 function renderFurnace(){
   const f=state.furnace, c=furnaceCost(f.from,f.to), pt=mult();
+  if(f.from<FURNACE_MIN) f.from=FURNACE_MIN; if(f.to<=f.from) f.to=Math.min(FURNACE.length-1,f.from+1);
   const opts=(sel,min)=>FURNACE.map((x,i)=>i<min?'':`<option value="${i}"${sel===i?' selected':''}>${x[0]}</option>`).join('');
   // 정레벨 도달 기준으로 구간 묶기: 예) 6불 → 7불 (5단계)
   const groups=[]; for(let i=f.from+1;i<=f.to;i++){const name=FURNACE[i][0]; const target=name.includes('-')?null:name; let g=groups[groups.length-1]; if(!g||g.closed){g={start:FURNACE[i-1][0],fc:0,r:0,n:0,closed:false};groups.push(g);} g.fc+=FURNACE[i][1]; g.r+=FURNACE[i][2]; g.n++; g.last=name; if(target) g.closed=true;}
@@ -359,16 +361,16 @@ function renderFurnace(){
   const pts=c.fc*ITEMS.fireCrystal.pts*pt + c.r*ITEMS.refinedFC.pts*pt;
   const html=`<div class="day-head"><h2>용광로 비용<small>불의 수정 · 제련된 불의 수정</small></h2></div>
   <div class="section"><div class="list"><div class="row troops-like">
-    <div class="ctl charm-ctl" style="justify-content:flex-start;flex-wrap:wrap"><span class="lbl">현재</span><select id="fFrom">${opts(f.from,0)}</select><span class="lbl">→ 목표</span><select id="fTo">${opts(f.to,1)}</select></div>
+    <div class="ctl charm-ctl" style="justify-content:flex-start;flex-wrap:wrap"><span class="lbl">현재</span><select id="fFrom">${opts(f.from,FURNACE_MIN)}</select><span class="lbl">→ 목표</span><select id="fTo">${opts(f.to,FURNACE_MIN+1)}</select></div>
     <div class="fsum"><div><small>불의 수정</small><b class="num">${fmt(c.fc)}</b><span>개</span></div><div><small>제련된 불의 수정</small><b class="num">${fmt(c.r)}</b><span>개</span></div><div><small>단계 수</small><b class="num">${c.n}</b><span>단계</span></div></div>
     ${rows?`<div class="steps">${rows}</div>`:'<div class="got">목표를 현재보다 높게 고르세요</div>'}
     <div class="got">이 수량을 전부 쓰면 1·5일차 점수 <span class="num">${fmt(pts)}</span>점 (불수 ${fmt1(up(ITEMS.fireCrystal.pts))}점 · 제련 ${fmt1(up(ITEMS.refinedFC.pts))}점 기준)</div>
   </div><div class="list-foot"><span class="foot-btns"><button type="button" class="mini" data-applyf="1">1일차 수량에 넣기</button><button type="button" class="mini" data-applyf="5">5일차 수량에 넣기</button></span></div></div>
-  <p class="hint-p">각 정레벨은 5단계(예: 6불-1 ~ 6불-4, 7불)로 나뉘며 앞 4단계와 마지막 단계의 비용이 다릅니다. 6불→10불 합계는 불의 수정 4,995개 · 제련 810개입니다. "수량에 넣기"를 누르면 그 날짜의 불의 수정·제련된 불의 수정 입력칸에 이 수량이 들어갑니다.</p></div>`;
+  <p class="hint-p">각 정레벨은 5단계(예: 6불-1 ~ 6불-4, 7불)로 나뉘며 앞 4단계와 마지막 단계의 비용이 다릅니다. 8불→10불 합계는 불의 수정 2,835개 · 제련 600개입니다. "수량에 넣기"를 누르면 그 날짜의 불의 수정·제련된 불의 수정 입력칸에 이 수량이 들어갑니다.</p></div>`;
   const panel=document.getElementById('panel'); panel.innerHTML=html;
   document.getElementById('resetDay').textContent='용광로 선택 초기화';
   panel.querySelector('#fFrom').addEventListener('change',e=>{f.from=Number(e.target.value); if(f.to<=f.from) f.to=Math.min(FURNACE.length-1,f.from+1); save(); render();});
-  panel.querySelector('#fTo').addEventListener('change',e=>{f.to=Number(e.target.value); if(f.to<=f.from) f.from=Math.max(0,f.to-1); save(); render();});
+  panel.querySelector('#fTo').addEventListener('change',e=>{f.to=Number(e.target.value); if(f.to<=f.from) f.from=Math.max(FURNACE_MIN,f.to-1); save(); render();});
   panel.querySelectorAll('[data-applyf]').forEach(b=>b.addEventListener('click',()=>{const d=Number(b.dataset.applyf),q=state.days[d].q; if((q.fireCrystal||q.refinedFC)&&!confirm(`${d}일차에 이미 입력된 불의 수정 수량을 덮어쓸까요?`)) return; q.fireCrystal=c.fc; q.refinedFC=c.r; state.tab=d; save(); render(); window.scrollTo(0,0);}));
 }
 function render(){
