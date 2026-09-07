@@ -95,6 +95,7 @@ select{text-align:left;width:auto;padding-right:6px}
 .troops .kind{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.06em;margin-right:2px}
 .mini{font:inherit;font-size:13px;color:var(--accent-ink);background:none;border:1px dashed var(--accent);border-radius:8px;padding:6px 12px;cursor:pointer}
 .x{font:inherit;font-size:13px;color:var(--muted);background:none;border:0;cursor:pointer;padding:4px 6px}
+.hint-p{margin:8px 2px 0;font-size:12px;color:var(--muted);line-height:1.5}
 .list-foot{padding:10px 14px;border-top:1px solid var(--line-soft);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 
 .tools{display:flex;justify-content:space-between;gap:10px;margin-top:22px;flex-wrap:wrap}
@@ -139,6 +140,7 @@ select{text-align:left;width:auto;padding-right:6px}
     <p><b>발레리아 보너스</b> · 게임은 모든 항목에 발레리아 도움 보너스를 곱해서 보여줍니다. 보너스는 2%씩 올라 최대 20%입니다. 위에서 본인 보너스를 맞추면 게임과 같은 숫자가 나옵니다.</p>
     <p><b>가속</b> · 일·시간·분을 넣으면 분 단위로 환산해 1분당 30점으로 계산합니다.</p>
     <p><b>병력 승급</b> · 승급 점수는 목표 등급 점수에서 원래 등급 점수를 뺀 값입니다. 훈련은 4일차에 <em>완료</em>되어야 점수가 붙습니다.</p>
+    <p><b>영주 보석</b> · 게임의 "영주 보석 최고 평점 1포인트 증가 = 70점"을 레벨별 평점 증가량으로 풀어 계산합니다. 레벨별 평점은 해외 계산기(wostools.net) 데이터이며, 게임 보석 화면의 평점 증가량과 다르면 알려주세요.</p>
     <p><b>채집</b> · 채집량 자체를 입력하면 고기·나무 1,000당, 석탄 200당, 철 50당 2점으로 계산합니다.</p>
     <p>입력값은 이 브라우저에 자동 저장됩니다.</p>
   </section>
@@ -146,7 +148,7 @@ select{text-align:left;width:auto;padding-right:6px}
 
 <script>
 const ITEMS = {
-  chiefCharm:{ko:'영주 보석 최고 평점 +1',en:'Chief Charm Score',pts:70,unit:'점'},
+  chiefCharm:{ko:'영주 보석 최고 평점 +1',en:'평점 증가량을 직접 알 때 · 아래 상세 계산과 중복 입력 주의',pts:70,unit:'점'},
   chiefGear:{ko:'영주 장비 최고 평점 +1',en:'Chief Gear Score · 영주 보석 제외',pts:36,unit:'점'},
   fireCrystal:{ko:'불의 수정',en:'건물 업그레이드에 소모',pts:2000,unit:'개'},
   refinedFC:{ko:'제련된 불의 수정',en:'건물 업그레이드에 소모',pts:30000,unit:'개'},
@@ -179,29 +181,38 @@ const ITEMS = {
   mithril:{ko:'미스릴',en:'Mithril',pts:144000,unit:'개'},
 };
 const TROOP_PTS=[3,4,5,8,12,18,25,35,45,60,75]; // T1..T11
+// 영주 보석: 정레벨별 평점 증가량(1~18). 4레벨 이후는 하위 단계(4.1, 4.2 …)로 나뉘어 평점이 균등 분배됨. 출처 wostools.net 영주 보석 계산기 데이터
+const CHARM_FULL=[625,1250,3125,8750,11250,12500,12500,13000,14000,15000,16000,17000,18000,19000,20000,21000,22500,24300];
+const CHARM_LEVELS=(()=>{const out=[];const split=(u,h)=>{const t=Math.floor(u/h),r=u-t*h;return Array.from({length:h},(_,a)=>t+(a<r?1:0));};
+  for(let m=1;m<=18;m++){const h=m<=4?1:m<=11?4:m<=16?5:9;const parts=split(CHARM_FULL[m-1],h);for(let t=0;t<h;t++) out.push({name:t===h-1?`${m}`:`${m-1}.${t+1}`,score:parts[t]});}
+  return out;})();
+const CHARM_PT=70;
+const charmScore=(from,to)=>{let s=0;for(let i=from;i<to;i++) s+=CHARM_LEVELS[i].score;return s;}; // 인덱스 0=없음, k=CHARM_LEVELS[k-1]
+const freshCharm=()=>({from:4,to:5,n:0});
+const freshDay=d=>({q:{}, ...(d===4?{troops:[{kind:'promote',from:9,to:10,n:0}]}:{}), ...([1,3,4].includes(d)?{charms:[freshCharm()]}:{})});
 const DAYS=[
   {n:1,ko:'도시 건설',en:'City Construction',
    hot:['fireCrystal','refinedFC','spConstruction','chiefCharm'],
-   groups:[['핵심 항목',['fireCrystal','refinedFC','spConstruction','chiefCharm']],['같이 계산되는 항목',['fcShard','spResearch','spTraining','spExpert']]]},
+   groups:[['점수 항목',['fireCrystal','refinedFC','spConstruction','fcShard','spResearch','spTraining','spExpert','chiefCharm']]],charm:true},
   {n:2,ko:'연구',en:'Research Day',
    hot:['fcShard','spResearch','luckyWheel','mythicShard','epicShard','rareShard','expertSigil'],
-   groups:[['핵심 항목',['fcShard','spResearch','luckyWheel','rareShard','epicShard','mythicShard','expertSigil','bookOfKnowledge']],['채집',['gatherMeat','gatherWood','gatherCoal','gatherIron']],['같이 계산되는 항목',['fireCrystal','refinedFC','spConstruction','spTraining','spExpert']]]},
+   groups:[['점수 항목',['fcShard','spResearch','luckyWheel','rareShard','epicShard','mythicShard','expertSigil','bookOfKnowledge','gatherMeat','gatherWood','gatherCoal','gatherIron','fireCrystal','refinedFC','spConstruction','spTraining','spExpert']]]},
   {n:3,ko:'야수 처치',en:'Beast Slay',
    hot:['polarTerror','beast26','advWildMark','petScore'],
-   groups:[['사냥',['polarTerror','beast1','beast11','beast16','beast21','beast26']],['펫 · 영주',['petScore','advWildMark','commonWildMark','chiefCharm']],['같이 계산되는 항목',['luckyWheel','rareShard','epicShard','mythicShard','expertSigil','bookOfKnowledge']]]},
+   groups:[['점수 항목',['polarTerror','beast1','beast11','beast16','beast21','beast26','petScore','advWildMark','commonWildMark','luckyWheel','rareShard','epicShard','mythicShard','expertSigil','bookOfKnowledge','spExpert','chiefCharm']]],charm:true},
   {n:4,ko:'영웅 성장',en:'Hero Development · 병사 훈련',
    hot:['mithril','widget','essenceStone'],
-   groups:[['영웅 장비',['mithril','widget','essenceStone','chiefCharm']]],troops:true},
+   groups:[['점수 항목',['mithril','widget','essenceStone','chiefCharm']]],troops:true,charm:true},
   {n:5,ko:'전투력 부스트',en:'Power Boost',
    hot:['mithril','chiefGear','refinedFC','fireCrystal','advWildMark'],
-   groups:[['영웅 · 영주 · 펫',['mithril','widget','essenceStone','chiefGear','petScore','advWildMark','commonWildMark']],['건설 · 연구 · 가속',['refinedFC','fireCrystal','fcShard','spConstruction','spResearch','spTraining','spExpert']]]},
+   groups:[['점수 항목',['mithril','widget','essenceStone','chiefGear','petScore','advWildMark','commonWildMark','refinedFC','fireCrystal','fcShard','spConstruction','spResearch','spTraining','spExpert']]]},
 ];
 
 const KEY='wos-svs-prep-v1';
 let state=load();
 function load(){
-  try{const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s&&s.days){ if(!s.bonusDefault20){s.bonus=20;s.bonusDefault20=true;} return s; }}catch(e){}
-  return {tab:1,bonus:20,bonusDefault20:true,days:{1:{q:{}},2:{q:{}},3:{q:{}},4:{q:{},troops:[{kind:'promote',from:9,to:10,n:0}]},5:{q:{}}}};
+  try{const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s&&s.days){ if(!s.bonusDefault20){s.bonus=20;s.bonusDefault20=true;} for(const d of [1,3,4]) if(!s.days[d].charms) s.days[d].charms=[freshCharm()]; return s; }}catch(e){}
+  return {tab:1,bonus:20,bonusDefault20:true,days:{1:freshDay(1),2:freshDay(2),3:freshDay(3),4:freshDay(4),5:freshDay(5)}};
 }
 function save(){
   try{localStorage.setItem(KEY,JSON.stringify(state));document.getElementById('saved').textContent='자동 저장됨 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});}catch(e){}
@@ -222,10 +233,12 @@ function troopPts(t){
   const diff=TROOP_PTS[t.to-1]-TROOP_PTS[t.from-1];
   return diff>0?n*up(diff):0;
 }
+function charmPts(c){const n=Number(c.n||0);if(!n||c.to<=c.from) return 0;return n*charmScore(c.from,c.to)*up(CHARM_PT);}
 function dayTotal(d){
   const day=DAYS[d-1]; let s=0;
   for(const [,ids] of day.groups) for(const id of ids) s+=itemPts(d,id);
   if(day.troops) for(const t of state.days[4].troops) s+=troopPts(t);
+  if(day.charm) for(const c of (state.days[d].charms||[])) s+=charmPts(c);
   return s;
 }
 
@@ -286,6 +299,26 @@ function troopsHTML(){
   return `<div class="section troops"><h3>병력 훈련 · 승급</h3><div class="list">${rows}
     <div class="list-foot"><button type="button" class="mini" id="addTroop">+ 줄 추가</button><span class="got">병력 소계 <span class="num">${fmt(sub)}</span>점</span></div></div></div>`;
 }
+function charmsHTML(d){
+  const list=state.days[d].charms||[];
+  const opts=(sel,zero)=>{let o=zero?`<option value="0"${sel===0?' selected':''}>없음</option>`:'';CHARM_LEVELS.forEach((L,i)=>{o+=`<option value="${i+1}"${sel===i+1?' selected':''}>Lv.${L.name}</option>`;});return o;};
+  const rows=list.map((c,i)=>{
+    const sc=c.to>c.from?charmScore(c.from,c.to):0,p=charmPts(c);
+    return `<div class="row${Number(c.n)?' active':''}">
+      <div class="ctl">
+        <select data-charm="${i}" data-f="from">${opts(c.from,true)}</select><span class="unit">→</span>
+        <select data-charm="${i}" data-f="to">${opts(c.to,false)}</select>
+        <input type="number" min="0" max="18" inputmode="numeric" data-charm="${i}" data-f="n" value="${c.n||''}" placeholder="0" style="width:84px"><span class="unit">개</span>
+        <button type="button" class="x" data-charmdel="${i}" aria-label="줄 삭제">삭제</button>
+      </div>
+      <div class="got"><span class="rate">보석 1개당 평점 <span class="num">+${fmt(sc)}</span> × ${fmt1(up(CHARM_PT))}점</span> &nbsp;→&nbsp; <span class="num">${fmt(p)}</span>점</div>
+    </div>`;
+  }).join('');
+  const sub=list.reduce((s,c)=>s+charmPts(c),0);
+  return `<div class="section troops"><h3>영주 보석 상세 계산</h3><div class="list">${rows}
+    <div class="list-foot"><button type="button" class="mini" data-addcharm="${d}">+ 줄 추가</button><span class="got">보석 소계 <span class="num">${fmt(sub)}</span>점</span></div></div>
+    <p class="hint-p">현재 레벨 → 목표 레벨과 보석 개수를 넣으면 평점 증가량 × ${CHARM_PT}점으로 계산합니다. 정레벨 평점: Lv.1 625 · Lv.2 1,250 · Lv.3 3,125 · Lv.4 8,750 · Lv.5 11,250 · Lv.6~7 12,500 · Lv.8 13,000 · Lv.9 14,000 · Lv.10 15,000 · Lv.11 16,000 · Lv.12 17,000 … Lv.16 21,000 · Lv.17 22,500 · Lv.18 24,300 (하위 단계는 균등 분할).</p></div>`;
+}
 function render(){
   renderTabs();
   const d=state.tab,day=DAYS[d-1],ds=state.days[d],total=dayTotal(d);
@@ -294,6 +327,7 @@ function render(){
     html+=`<div class="section"><h3>${title}</h3><div class="list">${ids.map(id=>rowHTML(d,id,day.hot.includes(id))).join('')}</div></div>`;
   }
   if(day.troops) html+=troopsHTML();
+  if(day.charm) html+=charmsHTML(d);
   const panel=document.getElementById('panel'); panel.innerHTML=html;
   document.getElementById('resetDay').textContent=`${d}일차만 지우기`;
   bind(panel,d);
@@ -309,6 +343,14 @@ function bind(panel,d){
   panel.querySelectorAll('button[data-step]').forEach(b=>b.addEventListener('click',()=>{
     const id=b.dataset.step; ds.q[id]=Math.max(0,qty(d,id)+Number(b.dataset.dir)); save(); render();
   }));
+  if(DAYS[d-1].charm){
+    panel.querySelectorAll('[data-charm]').forEach(el=>el.addEventListener(el.tagName==='SELECT'?'change':'input',e=>{
+      const c=ds.charms[Number(e.target.dataset.charm)],f=e.target.dataset.f;
+      c[f]=Math.max(0,Number(e.target.value||0)); if(f==='from'&&c.to<=c.from) c.to=Math.min(CHARM_LEVELS.length,c.from+1); save(); f==='n'?softUpdate():render();
+    }));
+    panel.querySelectorAll('[data-charmdel]').forEach(b=>b.addEventListener('click',()=>{ds.charms.splice(Number(b.dataset.charmdel),1);save();render();}));
+    panel.querySelector('[data-addcharm]').addEventListener('click',()=>{ds.charms.push(freshCharm());save();render();});
+  }
   if(DAYS[d-1].troops){
     panel.querySelectorAll('[data-troop]').forEach(el=>el.addEventListener(el.tagName==='SELECT'?'change':'input',e=>{
       const t=ds.troops[Number(e.target.dataset.troop)],f=e.target.dataset.f;
@@ -322,7 +364,7 @@ function bind(panel,d){
 function softUpdate(){
   const d=state.tab,panel=document.getElementById('panel'),day=DAYS[d-1];
   const scroll=window.scrollY, active=document.activeElement;
-  const sel=active&&active.dataset?(active.dataset.q?`input[data-q="${active.dataset.q}"]`:active.dataset.time?`input[data-time="${active.dataset.time}"][data-part="${active.dataset.part}"]`:active.dataset.troop!==undefined?`[data-troop="${active.dataset.troop}"][data-f="${active.dataset.f}"]`:null):null;
+  const sel=active&&active.dataset?(active.dataset.q?`input[data-q="${active.dataset.q}"]`:active.dataset.time?`input[data-time="${active.dataset.time}"][data-part="${active.dataset.part}"]`:active.dataset.troop!==undefined?`[data-troop="${active.dataset.troop}"][data-f="${active.dataset.f}"]`:active.dataset.charm!==undefined?`[data-charm="${active.dataset.charm}"][data-f="${active.dataset.f}"]`:null):null;
   const pos=active&&active.selectionStart;
   render();
   if(sel){const el=panel.querySelector(sel); if(el){el.focus({preventScroll:true}); try{el.setSelectionRange(pos,pos);}catch(e){}}}
@@ -335,7 +377,7 @@ document.getElementById('bonusUp').onclick=()=>{state.bonus=Math.min(20,Number(s
 syncBonus();
 document.getElementById('resetDay').onclick=()=>{
   const d=state.tab; if(!confirm(`${d}일차 입력을 모두 지울까요?`)) return;
-  state.days[d]={q:{}, ...(d===4?{troops:[{kind:'promote',from:9,to:10,n:0}]}:{})}; save(); render();
+  state.days[d]=freshDay(d); save(); render();
 };
 document.getElementById('resetAll').onclick=()=>{
   if(!confirm('5일치 입력을 모두 지울까요?')) return;
