@@ -197,7 +197,7 @@ select{text-align:left;width:auto;padding:7px 6px 7px 8px;font-family:"IBM Plex 
   <section class="note">
     <p><b>점수 기준</b> · 2026-09-07 게임 안 점수표 스크린샷(1·3·4·5일차)과 대조해 확인한 기본값입니다. 미스릴 144,000, 병사 1~11급 3·4·5·8·12·18·25·35·45·60·75점 모두 게임과 일치합니다. 2일차 항목은 해외 계산기 값이라 게임 화면과 대조가 필요합니다.</p>
     <p><b>발레리아 보너스</b> · 게임은 모든 항목에 발레리아 도움 보너스를 곱해서 보여줍니다. 보너스는 2%씩 올라 최대 20%입니다. 위에서 본인 보너스를 맞추면 게임과 같은 숫자가 나옵니다.</p>
-    <p><b>가속</b> · 일·시간·분을 넣으면 분 단위로 환산해 1분당 30점으로 계산합니다. 1·2·5일차의 건설 가속은 건물 업그레이드에 필요한 시간(버프 적용)으로 자동 계산됩니다.</p>
+    <p><b>가속</b> · 일·시간·분을 넣으면 분 단위로 환산해 1분당 30점으로 계산합니다. 1·2·5일차의 건설 가속은 건물 업그레이드에 필요한 시간(버프 적용)으로, 연구 가속은 넣어준 연구 기본 시간(버프 적용)으로 자동 계산됩니다.</p>
     <p><b>병력 승급</b> · 승급 점수는 목표 등급 점수에서 원래 등급 점수를 뺀 값입니다. 훈련은 4일차에 <em>완료</em>되어야 점수가 붙습니다.</p>
     <p><b>영주 보석</b> · 게임의 "영주 보석 최고 평점 1포인트 증가 = 70점"을 레벨별 평점으로 풀어 계산합니다. 레벨별 평점은 게임 안 "영주 보석 평점 상세정보"(Lv.1~18, 하위 단계 포함)와 대조해 확인했습니다.</p>
     <p><b>건물 업그레이드</b> · 1·2·5일차의 불의 수정·제련된 불의 수정 점수는 건물별 현재→목표 레벨로 계산합니다(용광로·대사관·방패병/창병/궁병 캠프·지휘부·의무실·전쟁 아카데미, 8불부터, 각 정레벨 5단계). 예: 용광로 8불→10불 = 불의 수정 2,835개 · 제련 600개. 건물 비용은 해외 계산기 데이터라 게임과 다르면 알려주세요.</p>
@@ -281,28 +281,34 @@ const fmtDur=sec=>{sec=Math.max(0,Math.round(sec));const d=Math.floor(sec/86400)
 function furnacePts(d){const c=buildsCost(d);return c.fc*up(ITEMS.fireCrystal.pts)+c.r*up(ITEMS.refinedFC.pts);}
 const speedMins=d=>{const tc=buildsCost(d);return tc.t&&speedApplied()!==null?tc.t/(1+speedTotal()/100)/60:0;}; // 올림 없이 소수점 그대로
 function speedPts(d){return speedMins(d)*up(ITEMS.spConstruction.pts);}
+// 연구 가속: 전역 버프(state.research={pct,minister,applied}) + 일차별 연구 기본 시간(state.days[d].rbase 분)
+const rDraft=()=>Number((state.research||{}).pct||0)+((state.research||{}).minister?MINISTER_PCT:0);
+const rApplied=()=>{const a=(state.research||{}).applied;return a?Number(a.pct||0)+(a.minister?MINISTER_PCT:0):null;};
+const rDirty=()=>{const a=(state.research||{}).applied;return !a||Number(a.pct||0)!==Number(state.research.pct||0)||!!a.minister!==!!state.research.minister;};
+const rMins=d=>{const base=Number(state.days[d].rbase||0);return base&&rApplied()!==null?base/(1+rApplied()/100):0;};
+function researchPts(d){return rMins(d)*up(ITEMS.spResearch.pts);}
 const CHARM_DEFAULT=CHARM_LEVELS.findIndex(L=>L.name==='12')+1; // 기본 선택 Lv.12
 const freshCharm=()=>({to:CHARM_DEFAULT});
 const freshBuild=()=>({b:'furnace',from:0,to:0});
 const freshDay=d=>({q:{}, ...([1,2,5].includes(d)?{builds:[freshBuild()]}:{}), ...(d===4?{troops:[{kind:'promote',from:9,to:10,n:0}]}:{}), ...([1,3,4].includes(d)?{charms:[freshCharm()]}:{})});
 const DAYS=[
   {n:1,ko:'도시 건설',en:'City Construction',
-   groups:[['점수 항목',['fcShard','spResearch','spTraining','spExpert']]],charm:true,furnace:true},
+   groups:[['점수 항목',['fcShard','spTraining','spExpert']]],charm:true,furnace:true,research:true},
   {n:2,ko:'연구',en:'Research Day',
-   groups:[['점수 항목',['fcShard','spResearch','luckyWheel','rareShard','epicShard','mythicShard','expertSigil','bookOfKnowledge','gatherMeat','gatherWood','gatherCoal','gatherIron','spTraining','spExpert']]],furnace:true},
+   groups:[['점수 항목',['fcShard','luckyWheel','rareShard','epicShard','mythicShard','expertSigil','bookOfKnowledge','gatherMeat','gatherWood','gatherCoal','gatherIron','spTraining','spExpert']]],furnace:true,research:true},
   {n:3,ko:'야수 처치',en:'Beast Slay',
    groups:[['점수 항목',['polarTerror','beast1','beast11','beast16','beast21','beast26','petScore','advWildMark','commonWildMark','luckyWheel','rareShard','epicShard','mythicShard','expertSigil','bookOfKnowledge','spExpert']]],charm:true},
   {n:4,ko:'영웅 성장',en:'Hero Development · 병사 훈련',
    groups:[['점수 항목',['mithril','widget','essenceStone']]],troops:true,charm:true},
   {n:5,ko:'전투력 부스트',en:'Power Boost',
-   groups:[['점수 항목',['mithril','widget','essenceStone','chiefGear','petScore','advWildMark','commonWildMark','fcShard','spResearch','spTraining','spExpert']]],furnace:true},
+   groups:[['점수 항목',['mithril','widget','essenceStone','chiefGear','petScore','advWildMark','commonWildMark','fcShard','spTraining','spExpert']]],furnace:true,research:true},
 ];
 
 const KEY='wos-svs-prep-v1';
 let state=load();
 function load(){
-  try{const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s&&s.days){ if(s.tab===6) s.tab=1; if(!s.speed) s.speed={research:0,minister:false,applied:null}; else if(typeof s.speed.minister!=='boolean'){ s.speed={research:Number(s.speed.research||0)+Number(s.speed.island||0)+Number(s.speed.vip||0)+Number(s.speed.minister||0)+Number(s.speed.other||0),minister:false,applied:null}; } if(s.speed.applied===undefined) s.speed.applied=null; if(!s.bonusDefault20){s.bonus=20;s.bonusDefault20=true;} for(const d of [1,2,5]){ if(!s.days[d].builds){ const f=s.days[d].furnace; s.days[d].builds=[f&&f.from?{b:'furnace',from:f.from,to:f.to}:freshBuild()]; } } for(const d of [1,3,4]){ if(!s.days[d].charms) s.days[d].charms=[freshCharm()]; s.days[d].charms=s.days[d].charms.map(c=>({to:Number(c.to||c.lv||0)})); } return s; }}catch(e){}
-  return {tab:1,bonus:20,bonusDefault20:true,speed:{research:0,minister:false,applied:null},days:{1:freshDay(1),2:freshDay(2),3:freshDay(3),4:freshDay(4),5:freshDay(5)}};
+  try{const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s&&s.days){ if(s.tab===6) s.tab=1; if(!s.speed) s.speed={research:0,minister:false,applied:null}; else if(typeof s.speed.minister!=='boolean'){ s.speed={research:Number(s.speed.research||0)+Number(s.speed.island||0)+Number(s.speed.vip||0)+Number(s.speed.minister||0)+Number(s.speed.other||0),minister:false,applied:null}; } if(s.speed.applied===undefined) s.speed.applied=null; if(!s.research) s.research={pct:0,minister:false,applied:null}; if(!s.bonusDefault20){s.bonus=20;s.bonusDefault20=true;} for(const d of [1,2,5]){ if(!s.days[d].builds){ const f=s.days[d].furnace; s.days[d].builds=[f&&f.from?{b:'furnace',from:f.from,to:f.to}:freshBuild()]; } } for(const d of [1,3,4]){ if(!s.days[d].charms) s.days[d].charms=[freshCharm()]; s.days[d].charms=s.days[d].charms.map(c=>({to:Number(c.to||c.lv||0)})); } return s; }}catch(e){}
+  return {tab:1,bonus:20,bonusDefault20:true,speed:{research:0,minister:false,applied:null},research:{pct:0,minister:false,applied:null},days:{1:freshDay(1),2:freshDay(2),3:freshDay(3),4:freshDay(4),5:freshDay(5)}};
 }
 function save(){
   try{localStorage.setItem(KEY,JSON.stringify(state));document.getElementById('saved').textContent='자동 저장됨 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});}catch(e){}
@@ -331,6 +337,7 @@ function dayTotal(d){
   if(day.troops) for(const t of state.days[4].troops) s+=troopPts(t);
   if(day.charm) for(const c of (state.days[d].charms||[])) s+=charmPts(c);
   if(day.furnace) s+=furnacePts(d)+speedPts(d);
+  if(day.research) s+=researchPts(d);
   return s;
 }
 
@@ -443,6 +450,31 @@ function speedHTML(d){
   </div>
   <p class="hint-p">게임 영주 정보의 버프 화면에 나오는 "건설 속도 +N%"(섬·VIP 포함)를 넣고 "적용"을 누르면 실제 소요 시간 = 기본 시간 ÷ (1 + N%)로 계산하고, 그 시간을 전부 건설 가속으로 채운다고 보고 1분당 점수를 곱합니다. 버프 값은 모든 일차에 공통으로 적용됩니다.</p></div>`;
 }
+function researchHTML(d){
+  const ds=state.days[d], base=Number(ds.rbase||0), applied=rApplied(), pct=applied||0, dirty=rDirty(), mins=rMins(d), spPt=up(ITEMS.spResearch.pts), pts=researchPts(d);
+  const tp=timeParts(base);
+  const title=applied===null?'미적용':`적용됨 +${fmt1(pct)}%`;
+  return `<div class="section"><h3>과학 기술 연구 가속 아이템 · ${title} · 1분 ${fmt1(spPt)}점</h3><div class="list">
+    <div class="row troops-like${dirty?' dirty':''}"><div class="speed-grid"><label><span>연구 속도 합계 (게임 버프 화면 값)</span><span class="pct"><input type="text" class="n" inputmode="decimal" data-rpct="1" value="${(state.research.pct||'')}" placeholder="0"><em>%</em></span></label><label class="chk"><input type="checkbox" id="rMinisterChk"${state.research.minister?' checked':''}><span>집행관 버프 <b>+${MINISTER_PCT}%</b></span></label><span class="speed-btns"><button type="button" class="apply" id="rApply"${dirty?'':' disabled'}>${dirty?'적용':'✓ 적용됨'}</button><button type="button" class="x speed-reset" id="rReset" aria-label="연구 가속 점수 초기화">↺ 초기화</button></span></div>
+    ${dirty?`<div class="got dirty-note">입력 합계 +${fmt1(rDraft())}% · "적용"을 누르면 점수에 반영됩니다</div>`:''}</div>
+    <div class="row troops-like"><div class="ctl" style="justify-content:flex-start;flex-wrap:wrap"><span class="lbl">연구 기본 시간</span><div class="time">
+      <input type="text" class="n" inputmode="numeric" data-rtime="d" value="${tp.d||''}" placeholder="0"><span class="unit">일</span>
+      <input type="text" class="n" inputmode="numeric" data-rtime="h" value="${tp.h||''}" placeholder="0"><span class="unit">시간</span>
+      <input type="text" class="n" inputmode="numeric" data-rtime="m" value="${tp.m||''}" placeholder="0"><span class="unit">분</span></div></div>
+      <div class="got">이 날짜에 돌릴 연구들의 <b>버프 없는 기본 시간</b>을 합쳐서 넣으세요</div></div>
+    ${base&&applied!==null?`<div class="bsum"><div class="speed-res"><div><small>기본 연구 시간</small><b>${fmtDur(base*60)}</b></div><div><small>버프 적용 후</small><b>${fmtDur(mins*60)}</b></div><div><small>필요 연구 가속</small><b>${fmt1(mins)}분</b></div></div>
+    <div class="ftotal"><span>연구 가속 점수 <small style="font-weight:400;color:var(--muted)">${fmt1(mins)}분 × ${fmt1(spPt)}점</small></span><span class="num">${fmt(pts)}<small>점</small></span></div></div>`:`<div class="list-foot"><span class="got">${base?'버프를 넣고 "적용"을 누르면 필요한 연구 가속과 점수를 계산합니다':'연구 기본 시간을 넣고 버프를 적용하면 이 날짜의 연구 가속 점수를 계산합니다'}</span></div>`}
+  </div>
+  <p class="hint-p">게임 영주 정보의 버프 화면에 나오는 "연구 속도 +N%"를 넣고 "적용"을 누르면 실제 소요 시간 = 기본 시간 ÷ (1 + N%)로 계산하고, 그 시간을 전부 연구 가속으로 채운다고 보고 1분당 점수를 곱합니다. 버프 값은 모든 일차에 공통, 연구 기본 시간은 일차마다 따로 넣습니다.</p></div>`;
+}
+function bindResearch(panel,d){
+  const ds=state.days[d];
+  const pi=panel.querySelector('input[data-rpct]'); if(pi) pi.addEventListener('input',e=>{state.research.pct=num(e.target.value); save(); softUpdate();});
+  const mc=panel.querySelector('#rMinisterChk'); if(mc) mc.addEventListener('change',e=>{state.research.minister=!!e.target.checked; save(); render();});
+  const ap=panel.querySelector('#rApply'); if(ap) ap.addEventListener('click',()=>{state.research.applied={pct:Number(state.research.pct||0),minister:!!state.research.minister}; save(); render();});
+  const rs=panel.querySelector('#rReset'); if(rs) rs.addEventListener('click',()=>{state.research.applied=null; save(); render();});
+  panel.querySelectorAll('input[data-rtime]').forEach(inp=>inp.addEventListener('input',()=>{const parts={};panel.querySelectorAll('input[data-rtime]').forEach(x=>parts[x.dataset.rtime]=num(x.value)); ds.rbase=parts.d*1440+parts.h*60+parts.m; save(); softUpdate();}));
+}
 function bindFurnace(panel,d){
   const ds=state.days[d];
   panel.querySelectorAll('select[data-build]').forEach(el=>{
@@ -476,6 +508,7 @@ function render(){
   let html=`<div class="day-head"><h2>${day.n}일차 ${day.ko}<small>${day.en}</small></h2><span class="num">${fmt(total)}</span></div>`;
   if(day.charm) html+=charmsHTML(d);
   if(day.furnace) html+=furnaceHTML(d)+speedHTML(d);
+  if(day.research) html+=researchHTML(d);
   for(const [title,ids] of day.groups){
     html+=`<div class="section"><h3>${title}</h3><div class="list">${ids.map(id=>rowHTML(d,id,false)).join('')}</div></div>`;
   }
@@ -496,6 +529,7 @@ function bind(panel,d){
     const id=b.dataset.step; ds.q[id]=Math.max(0,qty(d,id)+Number(b.dataset.dir)); save(); render();
   }));
   if(DAYS[d-1].furnace) bindFurnace(panel,d);
+  if(DAYS[d-1].research) bindResearch(panel,d);
   if(DAYS[d-1].charm){
     panel.querySelectorAll('[data-charm]').forEach(el=>el.addEventListener(el.tagName==='SELECT'?'change':'input',e=>{
       const c=ds.charms[Number(e.target.dataset.charm)],f=e.target.dataset.f;
@@ -524,7 +558,7 @@ function bind(panel,d){
 function softUpdate(){
   const d=state.tab,panel=document.getElementById('panel'),day=DAYS[d-1];
   const scroll=window.scrollY, active=document.activeElement;
-  const sel=active&&active.dataset?(active.dataset.q?`input[data-q="${active.dataset.q}"]`:active.dataset.time?`input[data-time="${active.dataset.time}"][data-part="${active.dataset.part}"]`:active.dataset.troop!==undefined?`[data-troop="${active.dataset.troop}"][data-f="${active.dataset.f}"]`:active.dataset.charm!==undefined?`[data-charm="${active.dataset.charm}"][data-f="${active.dataset.f}"]`:active.dataset.speed?`input[data-speed="${active.dataset.speed}"]`:null):null;
+  const sel=active&&active.dataset?(active.dataset.q?`input[data-q="${active.dataset.q}"]`:active.dataset.time?`input[data-time="${active.dataset.time}"][data-part="${active.dataset.part}"]`:active.dataset.troop!==undefined?`[data-troop="${active.dataset.troop}"][data-f="${active.dataset.f}"]`:active.dataset.charm!==undefined?`[data-charm="${active.dataset.charm}"][data-f="${active.dataset.f}"]`:active.dataset.speed?`input[data-speed="${active.dataset.speed}"]`:active.dataset.rpct?'input[data-rpct]':active.dataset.rtime?`input[data-rtime="${active.dataset.rtime}"]`:null):null;
   const pos=active&&active.selectionStart, raw=active&&active.value;
   render();
   if(sel){const el=panel.querySelector(sel); if(el){ if(raw!==undefined&&el.tagName==='INPUT') el.value=raw; el.focus({preventScroll:true}); try{el.setSelectionRange(pos,pos);}catch(e){}}}
