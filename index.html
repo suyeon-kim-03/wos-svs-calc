@@ -210,7 +210,8 @@ const CHARM_LEVELS=(()=>{
   grp(17,8,[2700,2700,2700,2700,2700,2700,2700,2700,2700]);
   return L;})();
 const CHARM_PT=70;
-const freshCharm=()=>({to:0});
+const CHARM_DEFAULT=CHARM_LEVELS.findIndex(L=>L.name==='12')+1; // 기본 선택 Lv.12
+const freshCharm=()=>({to:CHARM_DEFAULT});
 const freshDay=d=>({q:{}, ...(d===4?{troops:[{kind:'promote',from:9,to:10,n:0}]}:{}), ...([1,3,4].includes(d)?{charms:[freshCharm()]}:{})});
 const DAYS=[
   {n:1,ko:'도시 건설',en:'City Construction',
