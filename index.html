@@ -44,7 +44,7 @@ h1{margin:2px 0 0;font-size:20px;font-weight:600;letter-spacing:-.01em;text-wrap
 .bonus{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
 .bonus label{font-size:13px;color:var(--muted);font-weight:500}
 .bonus .hint{font-size:11px;color:var(--muted);flex-basis:100%}
-.bonus .stepper input{width:58px}
+.bonus .stepper input{width:58px;font-family:"Barlow Condensed","IBM Plex Sans KR",sans-serif;font-weight:600;font-size:18px;font-variant-numeric:tabular-nums;cursor:default;caret-color:transparent;user-select:none;-webkit-user-select:none}
 .tab{flex:1 0 auto;min-width:96px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:7px 10px;text-align:left;cursor:pointer;font:inherit}
 .tab b{display:block;font-size:12px;font-weight:600;line-height:1.2}
 .tab span{display:block;font-size:11px;color:var(--muted);line-height:1.2}
@@ -133,7 +133,7 @@ select{text-align:left;width:auto;padding-right:6px}
       <div class="total"><small>5일 합계</small><div class="num" id="grand">0</div></div>
     </div>
     <div class="tabs" role="tablist" id="tabs"></div>
-    <div class="bonus"><label for="bonus">발레리아 도움 보너스</label><span class="stepper"><button type="button" id="bonusDown" aria-label="2% 내리기">−</button><input id="bonus" type="number" min="0" max="20" step="2" inputmode="numeric"><button type="button" id="bonusUp" aria-label="2% 올리기">+</button></span><span class="unit">%</span><span class="hint">게임 점수표 위 "획득하는 포인트 +N%" 값 · 2%씩 최대 20% (발레리아 없으면 0)</span></div>
+    <div class="bonus"><label for="bonus">발레리아 도움 보너스</label><span class="stepper"><button type="button" id="bonusDown" aria-label="2% 내리기">−</button><input id="bonus" type="text" readonly tabindex="-1" aria-label="발레리아 도움 보너스 퍼센트"><button type="button" id="bonusUp" aria-label="2% 올리기">+</button></span><span class="unit">%</span><span class="hint">게임 점수표 위 "획득하는 포인트 +N%" 값 · −/+ 버튼으로 2%씩, 최대 20% (발레리아 없으면 0)</span></div>
   </header>
 
   <main id="panel"></main>
@@ -345,7 +345,6 @@ function softUpdate(){
 }
 const bonusEl=document.getElementById('bonus');
 function syncBonus(){bonusEl.value=Number(state.bonus||0);}
-bonusEl.addEventListener('input',e=>{state.bonus=Math.min(20,Math.max(0,Number(e.target.value||0)));save();render();});
 document.getElementById('bonusDown').onclick=()=>{state.bonus=Math.max(0,Number(state.bonus||0)-2);syncBonus();save();render();};
 document.getElementById('bonusUp').onclick=()=>{state.bonus=Math.min(20,Number(state.bonus||0)+2);syncBonus();save();render();};
 syncBonus();
