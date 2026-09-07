@@ -492,7 +492,7 @@ function researchHTML(d){
     ${base?`<div class="bsum"><div class="speed-res"><div><small>기본 연구 시간</small><b>${fmtDur(base)}</b></div><div><small>버프 적용 후</small><b>${fmtDur(mins*60)}</b></div><div><small>필요 연구 가속</small><b>${fmt1(mins)}분</b></div></div>
     <div class="ftotal"><span>연구 가속 점수 <small style="font-weight:400;color:var(--muted)">${fmt1(mins)}분 × ${fmt1(spPt)}점</small></span><span class="num">${fmt(pts)}<small>점</small></span></div></div>`:`<div class="list-foot"><span class="got">연구 항목과 현재·목표 레벨을 고르면 이 날짜의 연구 가속 점수를 계산합니다</span></div>`}
   </div>
-  <p class="hint-p">연구 트리(발전·경제·전투)와 항목, 현재 → 목표 레벨을 고르면 기본 연구 시간을 합산합니다(항목명은 대략 번역한 한국어, 발전은 VII·경제는 III·전투는 VI 티어부터 표시). 연구 버프(게임 영주 정보의 "연구 속도 +N%")를 넣으면 바로 실제 시간 = 기본 시간 ÷ (1 + N%)로 계산하고, 그 시간을 전부 연구 가속으로 채운다고 보고 1분당 점수를 곱합니다. 여러 연구는 "연구 추가"로 줄을 늘리세요.</p></div>`;
+  <p class="hint-p">연구 버프(게임 영주 정보의 "연구 속도 +N%")를 넣으면 실제 시간 = 기본 시간 ÷ (1 + N%)로 계산하고, 그 시간을 전부 연구 가속으로 채운다고 보고 1분당 점수를 곱합니다. 여러 연구는 "연구 추가"로 줄을 늘리세요.</p></div>`;
 }
 function bindResearch(panel,d){
   const ds=state.days[d];
