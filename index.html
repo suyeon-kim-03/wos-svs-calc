@@ -209,19 +209,14 @@ const freshCharm=()=>({to:5});
 const freshDay=d=>({q:{}, ...(d===4?{troops:[{kind:'promote',from:9,to:10,n:0}]}:{}), ...([1,3,4].includes(d)?{charms:[freshCharm()]}:{})});
 const DAYS=[
   {n:1,ko:'도시 건설',en:'City Construction',
-   hot:['fireCrystal','refinedFC','spConstruction'],
-   groups:[['점수 항목',['fireCrystal','refinedFC','spConstruction','fcShard','spResearch','spTraining','spExpert']]],charm:true},
+   groups:[['점수 항목',['refinedFC','fireCrystal','fcShard','spConstruction','spResearch','spTraining','spExpert']]],charm:true},
   {n:2,ko:'연구',en:'Research Day',
-   hot:['fcShard','spResearch','luckyWheel','mythicShard','epicShard','rareShard','expertSigil'],
    groups:[['점수 항목',['fcShard','spResearch','luckyWheel','rareShard','epicShard','mythicShard','expertSigil','bookOfKnowledge','gatherMeat','gatherWood','gatherCoal','gatherIron','fireCrystal','refinedFC','spConstruction','spTraining','spExpert']]]},
   {n:3,ko:'야수 처치',en:'Beast Slay',
-   hot:['polarTerror','beast26','advWildMark','petScore'],
    groups:[['점수 항목',['polarTerror','beast1','beast11','beast16','beast21','beast26','petScore','advWildMark','commonWildMark','luckyWheel','rareShard','epicShard','mythicShard','expertSigil','bookOfKnowledge','spExpert']]],charm:true},
   {n:4,ko:'영웅 성장',en:'Hero Development · 병사 훈련',
-   hot:['mithril','widget','essenceStone'],
    groups:[['점수 항목',['mithril','widget','essenceStone']]],troops:true,charm:true},
   {n:5,ko:'전투력 부스트',en:'Power Boost',
-   hot:['mithril','chiefGear','refinedFC','fireCrystal','advWildMark'],
    groups:[['점수 항목',['mithril','widget','essenceStone','chiefGear','petScore','advWildMark','commonWildMark','refinedFC','fireCrystal','fcShard','spConstruction','spResearch','spTraining','spExpert']]]},
 ];
 
@@ -276,7 +271,7 @@ function renderTabs(){
 function timeParts(min){min=Number(min||0);return {d:Math.floor(min/1440),h:Math.floor(min%1440/60),m:Math.floor(min%60)};}
 function rowHTML(d,id,hot){
   const it=ITEMS[id],q=qty(d,id),p=itemPts(d,id);
-  const tag=hot?'<span class="hot">추천</span>':'';
+  const tag='';
   let ctl;
   if(it.time){
     const t=timeParts(q);
@@ -339,11 +334,11 @@ function render(){
   renderTabs();
   const d=state.tab,day=DAYS[d-1],ds=state.days[d],total=dayTotal(d);
   let html=`<div class="day-head"><h2>${day.n}일차 ${day.ko}<small>${day.en}</small></h2><span class="num">${fmt(total)}</span></div>`;
+  if(day.charm) html+=charmsHTML(d);
   for(const [title,ids] of day.groups){
-    html+=`<div class="section"><h3>${title}</h3><div class="list">${ids.map(id=>rowHTML(d,id,day.hot.includes(id))).join('')}</div></div>`;
+    html+=`<div class="section"><h3>${title}</h3><div class="list">${ids.map(id=>rowHTML(d,id,false)).join('')}</div></div>`;
   }
   if(day.troops) html+=troopsHTML();
-  if(day.charm) html+=charmsHTML(d);
   const panel=document.getElementById('panel'); panel.innerHTML=html;
   document.getElementById('resetDay').textContent=`${d}일차만 지우기`;
   bind(panel,d);
