@@ -381,11 +381,8 @@ function furnaceHTML(d){
     const usedByOthers=new Set(ds.builds.filter((o,j)=>j!==i).map(o=>o.b));
     const bopts=BUILD_KEYS.filter(k=>k===b.b||!usedByOthers.has(k)).map(k=>`<option value="${k}"${b.b===k?' selected':''}>${BUILDINGS[k].ko}</option>`).join('');
     const lopts=(sel,mn)=>`<option value="0"${!sel?' selected':''}>선택 안 함</option>`+st.map((x,k)=>k<mn?'':`<option value="${k}"${sel===k?' selected':''}>${x[0]}</option>`).join('');
-    const groups=[]; for(let k=b.from+1;on&&k<=b.to;k++){const name=st[k][0]; const target=name.includes('-')?null:name; let g=groups[groups.length-1]; if(!g||g.closed){g={start:st[k-1][0],fc:0,r:0,n:0,closed:false};groups.push(g);} g.fc+=st[k][1]; g.r+=st[k][2]; g.n++; g.last=name; if(target) g.closed=true;}
-    const lines=groups.map(g=>`<div class="step"><span>${g.start} → ${g.last} (${g.n}단계)</span><span class="num">불수 ${fmt(g.fc)} · 제련 ${fmt(g.r)}</span></div>`).join('');
     return `<div class="row troops-like${on?' active':''}">
       <div class="ctl charm-ctl" style="justify-content:flex-start;flex-wrap:wrap"><select data-build="${i}" data-f="b" class="bsel">${bopts}</select><span class="lbl">현재</span><select data-build="${i}" data-f="from">${lopts(b.from,min)}</select><span class="lbl">→ 목표</span><select data-build="${i}" data-f="to">${lopts(b.to,min+1)}</select><button type="button" class="x" data-builddel="${i}" aria-label="${i===0?'첫 줄 초기화':'이 건물 줄 삭제'}">${i===0?'↺ 초기화':'✕ 삭제'}</button></div>
-      ${lines?`<div class="steps">${lines}<div class="step sub"><span>${BUILDINGS[b.b].ko} 소계 · 불수 ${fmt(c.fc)} · 제련 ${fmt(c.r)}</span><span class="num">${fmt(c.fc*fcPt+c.r*rPt)}점</span></div></div>`:''}
     </div>`;
   }).join('');
   const tc=buildsCost(d), fcTotal=tc.fc*fcPt, rTotal=tc.r*rPt, total=fcTotal+rTotal;
