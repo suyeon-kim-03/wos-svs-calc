@@ -369,8 +369,8 @@ function furnaceHTML(d){
     <div class="ctl charm-ctl" style="justify-content:flex-start;flex-wrap:wrap"><span class="lbl">현재</span><select data-furn="from">${opts(f.from,FURNACE_MIN,true)}</select><span class="lbl">→ 목표</span><select data-furn="to">${opts(f.to,FURNACE_MIN+1,true)}</select><button type="button" class="x" data-furnreset="${d}" aria-label="용광로 선택 초기화">↺ 초기화</button></div>
     ${rows?`<div class="steps">${rows}</div>`:''}
     <div class="fsum two"><div><small>불의 수정</small><b class="num">${fmt(c.fc)}<em>개</em></b><span>× ${fmt1(fcPt)}점 = <strong class="num">${fmt(fcTotal)}</strong>점</span></div><div><small>제련된 불의 수정</small><b class="num">${fmt(c.r)}<em>개</em></b><span>× ${fmt1(rPt)}점 = <strong class="num">${fmt(rTotal)}</strong>점</span></div></div>
-    ${on?'':'<div class="got">현재·목표 레벨을 고르면 불의 수정과 제련된 불의 수정 점수가 한꺼번에 계산됩니다 (누르면 8불 → 10불로 시작)</div>'}
-  </div><div class="ftotal"><span>용광로 합계</span><span class="num">${fmt(total)}<small>점</small></span></div></div></div>`;
+  </div><div class="ftotal"><span>용광로 합계</span><span class="num">${fmt(total)}<small>점</small></span></div></div>
+  <p class="hint-p">현재·목표 레벨을 고르면 불의 수정과 제련된 불의 수정 점수가 한꺼번에 계산됩니다. 셀렉트를 누르면 8불 → 10불로 시작하고, 초기화하면 "선택 안 함"(0점)이 됩니다. 각 정레벨은 5단계(예: 8불-1 ~ 8불-4, 9불)로 나뉩니다.</p></div>`;
 }
 function bindFurnace(panel,d){
   const ds=state.days[d], f=ds.furnace;
