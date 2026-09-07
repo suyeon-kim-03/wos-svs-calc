@@ -99,6 +99,7 @@ select{text-align:left;width:auto;padding-right:6px}
 .x{font:inherit;font-size:13px;font-weight:500;color:var(--accent-ink);background:var(--surface);border:1px solid var(--accent);border-radius:8px;cursor:pointer;padding:6px 10px;line-height:1.2;white-space:nowrap;flex:0 0 auto;margin-left:auto}
 .x:active{background:var(--accent-soft)}
 .charm-ctl select{flex:1 1 auto;min-width:0;max-width:100%}
+.lbl{font-size:14px;font-weight:500;color:var(--ink);white-space:nowrap}
 .steps{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--muted);padding:2px 0 2px 4px;border-left:2px solid var(--line-soft)}
 .step{display:flex;justify-content:space-between;gap:12px}
 .step .num{color:var(--ink)}
@@ -323,7 +324,7 @@ function charmsHTML(d){
     const L=CHARM_LEVELS[c.to-1],p=charmPts(c);
     return `<div class="row${p?' active':''}">
       <div class="ctl charm-ctl">
-        <span class="unit">목표 단계</span><select data-charm="${i}" data-f="to">${opts(c.to)}</select>
+        <span class="lbl">목표 단계</span><select data-charm="${i}" data-f="to">${opts(c.to)}</select>
         <button type="button" class="x" data-charmdel="${i}" aria-label="이 보석 줄 삭제">✕ 삭제</button>
       </div>
       <div class="got">${L?`평점 <span class="num">${fmt(L.score)}</span> × <span class="num">${fmt1(pt)}</span>점 &nbsp;→&nbsp; <span class="num">${fmt(p)}</span>점`:'목표 단계를 고르면 계산됩니다'}</div>
