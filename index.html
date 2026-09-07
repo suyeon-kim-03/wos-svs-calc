@@ -148,7 +148,7 @@ select{text-align:left;width:auto;padding-right:6px}
 
 <script>
 const ITEMS = {
-  chiefCharm:{ko:'영주 보석 최고 평점 +1',en:'평점 증가량을 직접 알 때 · 아래 상세 계산과 중복 입력 주의',pts:70,unit:'점'},
+  chiefCharm:{ko:'영주 보석 최고 평점 +1',en:'(미사용 · 단계별 계산으로 대체)',pts:70,unit:'점'},
   chiefGear:{ko:'영주 장비 최고 평점 +1',en:'Chief Gear Score · 영주 보석 제외',pts:36,unit:'점'},
   fireCrystal:{ko:'불의 수정',en:'건물 업그레이드에 소모',pts:2000,unit:'개'},
   refinedFC:{ko:'제련된 불의 수정',en:'건물 업그레이드에 소모',pts:30000,unit:'개'},
@@ -206,17 +206,17 @@ const freshCharm=()=>({lv:5,n:0});
 const freshDay=d=>({q:{}, ...(d===4?{troops:[{kind:'promote',from:9,to:10,n:0}]}:{}), ...([1,3,4].includes(d)?{charms:[freshCharm()]}:{})});
 const DAYS=[
   {n:1,ko:'도시 건설',en:'City Construction',
-   hot:['fireCrystal','refinedFC','spConstruction','chiefCharm'],
-   groups:[['점수 항목',['fireCrystal','refinedFC','spConstruction','fcShard','spResearch','spTraining','spExpert','chiefCharm']]],charm:true},
+   hot:['fireCrystal','refinedFC','spConstruction'],
+   groups:[['점수 항목',['fireCrystal','refinedFC','spConstruction','fcShard','spResearch','spTraining','spExpert']]],charm:true},
   {n:2,ko:'연구',en:'Research Day',
    hot:['fcShard','spResearch','luckyWheel','mythicShard','epicShard','rareShard','expertSigil'],
    groups:[['점수 항목',['fcShard','spResearch','luckyWheel','rareShard','epicShard','mythicShard','expertSigil','bookOfKnowledge','gatherMeat','gatherWood','gatherCoal','gatherIron','fireCrystal','refinedFC','spConstruction','spTraining','spExpert']]]},
   {n:3,ko:'야수 처치',en:'Beast Slay',
    hot:['polarTerror','beast26','advWildMark','petScore'],
-   groups:[['점수 항목',['polarTerror','beast1','beast11','beast16','beast21','beast26','petScore','advWildMark','commonWildMark','luckyWheel','rareShard','epicShard','mythicShard','expertSigil','bookOfKnowledge','spExpert','chiefCharm']]],charm:true},
+   groups:[['점수 항목',['polarTerror','beast1','beast11','beast16','beast21','beast26','petScore','advWildMark','commonWildMark','luckyWheel','rareShard','epicShard','mythicShard','expertSigil','bookOfKnowledge','spExpert']]],charm:true},
   {n:4,ko:'영웅 성장',en:'Hero Development · 병사 훈련',
    hot:['mithril','widget','essenceStone'],
-   groups:[['점수 항목',['mithril','widget','essenceStone','chiefCharm']]],troops:true,charm:true},
+   groups:[['점수 항목',['mithril','widget','essenceStone']]],troops:true,charm:true},
   {n:5,ko:'전투력 부스트',en:'Power Boost',
    hot:['mithril','chiefGear','refinedFC','fireCrystal','advWildMark'],
    groups:[['점수 항목',['mithril','widget','essenceStone','chiefGear','petScore','advWildMark','commonWildMark','refinedFC','fireCrystal','fcShard','spConstruction','spResearch','spTraining','spExpert']]]},
@@ -328,9 +328,9 @@ function charmsHTML(d){
     </div>`;
   }).join('');
   const sub=list.reduce((s,c)=>s+charmPts(c),0);
-  return `<div class="section troops"><h3>영주 보석 상세 계산</h3><div class="list">${rows}
+  return `<div class="section troops"><h3>영주 보석 최고 평점 1포인트 증가 · ${fmt1(up(CHARM_PT))}점</h3><div class="list">${rows}
     <div class="list-foot"><button type="button" class="mini" data-addcharm="${d}">+ 줄 추가</button><span class="got">보석 소계 <span class="num">${fmt(sub)}</span>점</span></div></div>
-    <p class="hint-p">올릴 레벨업 단계를 고르고 횟수를 넣으면 그 단계의 평점 × ${CHARM_PT}점(발레리아 보너스 포함)으로 계산합니다. 여러 단계를 올리면 줄을 추가하세요. 레벨별 평점은 게임의 "영주 보석 평점 상세정보"와 동일합니다.</p></div>`;
+    <p class="hint-p">증가 포인트 = 올린 단계의 평점 × ${fmt1(up(CHARM_PT))}점. 올릴 레벨업 단계를 고르고 횟수를 넣으세요. 여러 단계를 올리면 줄을 추가하세요. 단계별 평점은 게임의 "영주 보석 평점 상세정보"와 동일합니다.</p></div>`;
 }
 function render(){
   renderTabs();
