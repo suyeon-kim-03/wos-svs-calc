@@ -127,7 +127,8 @@ select{text-align:left;width:auto;padding:7px 6px 7px 8px;font-family:"IBM Plex 
 .speed{background:var(--surface);border:1px solid var(--line-soft);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:10px}
 .speed-head{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;font-weight:600;color:var(--ink)}
 .speed-head .num{color:var(--accent-ink);font-size:15px}
-.speed-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.speed-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;width:100%}
+.troops-like .speed-grid{grid-column:1}
 .speed-grid label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}
 .speed-grid .pct{display:flex;align-items:center;gap:4px}
 .speed-grid input{width:100%;min-width:0}
@@ -410,13 +411,17 @@ function furnaceHTML(d){
   return `<div class="section"><h3>건물 업그레이드 · 불의 수정 ${fmt1(fcPt)}점 · 제련된 불의 수정 ${fmt1(rPt)}점</h3><div class="list">${rows}
     <div class="list-foot"><span class="foot-btns"><button type="button" class="mini" data-addbuild="${d}"${ds.builds.length>=BUILD_KEYS.length?' disabled':''}>+ 건물 추가${ds.builds.length>=BUILD_KEYS.length?' (모두 추가됨)':''}</button><button type="button" class="mini clear" data-clearbuild="${d}">건물 전체 초기화</button></span></div>
     <div class="bsum"><div class="fsum two"><div><small>불의 수정 합계</small><b class="num">${fmt(tc.fc)}<em>개</em></b><span>× ${fmt1(fcPt)}점 = <strong class="num">${fmt(fcTotal)}</strong>점</span></div><div><small>제련된 불의 수정 합계</small><b class="num">${fmt(tc.r)}<em>개</em></b><span>× ${fmt1(rPt)}점 = <strong class="num">${fmt(rTotal)}</strong>점</span></div></div>
-    <div class="speed"><div class="speed-head"><span>건설 속도 버프</span><span class="num">합계 +${fmt1(speedTotal())}%</span></div>
-      <div class="speed-grid">${SPEED_KEYS.map(([k,label])=>`<label><span>${label}</span><span class="pct"><input type="number" min="0" step="0.5" inputmode="decimal" data-speed="${k}" value="${(state.speed[k]||'')}" placeholder="0"><em>%</em></span></label>`).join('')}</div>
-      ${tc.t?`<div class="speed-res"><div><small>기본 건설 시간</small><b>${fmtDur(tc.t)}</b></div><div><small>버프 적용 후</small><b>${fmtDur(tc.t/(1+speedTotal()/100))}</b></div><div><small>필요 건설 가속</small><b>${fmt(Math.ceil(tc.t/(1+speedTotal()/100)/60))}분</b></div></div>
-      <div class="foot-btns"><button type="button" class="mini" data-applyspeed="${d}">${Number(ds.q.spConstruction||0)===Math.ceil(tc.t/(1+speedTotal()/100)/60)?'✓ 건설 가속 칸에 들어가 있음':'아래 건설 가속 아이템 칸에 넣기'}</button></div>`:'<div class="got">건물을 고르면 건설 시간과 필요한 가속을 계산합니다</div>'}
-    </div>
     <div class="ftotal"><span>건물 합계</span><span class="num">${fmt(total)}<small>점</small></span></div></div></div>
-  <p class="hint-p">건물을 고르고 현재·목표 레벨을 고르면 불의 수정과 제련된 불의 수정 점수가 한꺼번에 계산됩니다. 셀렉트를 누르면 8불 → 10불로 시작하고, 초기화하면 "선택 안 함"(0점)이 됩니다. 올릴 건물이 여러 개면 "건물 추가"로 줄을 늘리세요. 각 정레벨은 5단계(예: 8불-1 ~ 8불-4, 9불)로 나뉩니다. 게임 영주 정보의 버프 화면에 나오는 "건설 속도 +N%"(섬·VIP 포함)를 넣으면 실제 소요 시간 = 기본 시간 ÷ (1 + N%)로 계산해 필요한 건설 가속(분)을 보여주고, 버튼으로 건설 가속 입력칸에 넣을 수 있습니다.</p></div>`;
+  <p class="hint-p">건물을 고르고 현재·목표 레벨을 고르면 불의 수정과 제련된 불의 수정 점수가 한꺼번에 계산됩니다. 셀렉트를 누르면 8불 → 10불로 시작하고, 초기화하면 "선택 안 함"(0점)이 됩니다. 올릴 건물이 여러 개면 "건물 추가"로 줄을 늘리세요. 각 정레벨은 5단계(예: 8불-1 ~ 8불-4, 9불)로 나뉩니다.</p></div>`;
+}
+function speedHTML(d){
+  const ds=state.days[d], tc=buildsCost(d), pct=speedTotal(), real=tc.t/(1+pct/100), mins=Math.ceil(real/60);
+  return `<div class="section"><h3>건설 속도 버프 · 합계 +${fmt1(pct)}%</h3><div class="list">
+    <div class="row troops-like"><div class="speed-grid">${SPEED_KEYS.map(([k,label])=>`<label><span>${label}</span><span class="pct"><input type="number" min="0" step="0.5" inputmode="decimal" data-speed="${k}" value="${(state.speed[k]||'')}" placeholder="0"><em>%</em></span></label>`).join('')}</div></div>
+    ${tc.t?`<div class="bsum"><div class="speed-res"><div><small>기본 건설 시간</small><b>${fmtDur(tc.t)}</b></div><div><small>버프 적용 후</small><b>${fmtDur(real)}</b></div><div><small>필요 건설 가속</small><b>${fmt(mins)}분</b></div></div>
+    <div class="foot-btns"><button type="button" class="mini" data-applyspeed="${d}">${Number(ds.q.spConstruction||0)===mins?'✓ 건설 가속 칸에 들어가 있음':'아래 건설 가속 아이템 칸에 넣기'}</button></div></div>`:`<div class="list-foot"><span class="got">위에서 건물을 고르면 이 날짜의 건설 시간과 필요한 가속을 계산합니다</span></div>`}
+  </div>
+  <p class="hint-p">게임 영주 정보의 버프 화면에 나오는 "건설 속도 +N%"(섬·VIP 포함)를 넣으면 실제 소요 시간 = 기본 시간 ÷ (1 + N%)로 계산합니다. 버프 값은 모든 일차에 공통으로 적용됩니다.</p></div>`;
 }
 function bindFurnace(panel,d){
   const ds=state.days[d];
@@ -448,7 +453,7 @@ function render(){
   const d=state.tab,day=DAYS[d-1],ds=state.days[d],total=dayTotal(d);
   let html=`<div class="day-head"><h2>${day.n}일차 ${day.ko}<small>${day.en}</small></h2><span class="num">${fmt(total)}</span></div>`;
   if(day.charm) html+=charmsHTML(d);
-  if(day.furnace) html+=furnaceHTML(d);
+  if(day.furnace) html+=furnaceHTML(d)+speedHTML(d);
   for(const [title,ids] of day.groups){
     html+=`<div class="section"><h3>${title}</h3><div class="list">${ids.map(id=>rowHTML(d,id,false)).join('')}</div></div>`;
   }
