@@ -132,6 +132,9 @@ select{text-align:left;width:auto;padding:7px 6px 7px 8px;font-family:"IBM Plex 
 .speed-grid .pct{display:flex;align-items:center;gap:4px}
 .speed-grid input{width:100%;min-width:0}
 .speed-grid em{font-style:normal;font-size:12px;color:var(--muted)}
+.speed-grid label.chk{flex-direction:row;align-items:center;gap:8px;align-self:end;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);color:var(--ink);font-size:14px;font-weight:500;cursor:pointer}
+.speed-grid label.chk input{width:18px;height:18px;accent-color:var(--accent);margin:0}
+.speed-grid label.chk b{color:var(--accent-ink);font-weight:600}
 .speed-res{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .speed-res div{display:flex;flex-direction:column;gap:2px;background:var(--surface-2);border-radius:8px;padding:8px 10px}
 .speed-res small{font-size:11px;color:var(--muted)}
@@ -259,8 +262,9 @@ const bIdx=(key,name)=>BUILDINGS[key].steps.findIndex(x=>x[0]===name);
 function buildCost(key,from,to){const st=BUILDINGS[key].steps;let fc=0,r=0,n=0,t=0;for(let i=from+1;i<=to&&i<st.length;i++){fc+=st[i][1];r+=st[i][2];t+=(st[i][3]||0);n++;}return {fc,r,n,t};}
 const buildOn=b=>b&&BUILDINGS[b.b]&&b.from>0&&b.to>b.from;
 function buildsCost(d){let fc=0,r=0,t=0;for(const b of (state.days[d].builds||[])){if(buildOn(b)){const c=buildCost(b.b,b.from,b.to);fc+=c.fc;r+=c.r;t+=c.t;}}return {fc,r,t};}
-const SPEED_KEYS=[['research','건설 속도 합계 (게임 버프 화면 값)'],['other','추가 버프 (화면에 없는 것, 예: 집행관 임명)']];
-const speedTotal=()=>SPEED_KEYS.reduce((a,[k])=>a+Number((state.speed||{})[k]||0),0);
+const SPEED_KEYS=[['research','건설 속도 합계 (게임 버프 화면 값)']];
+const MINISTER_PCT=10; // 집행관 버프는 +10% 고정
+const speedTotal=()=>Number((state.speed||{}).research||0)+((state.speed||{}).minister?MINISTER_PCT:0);
 const fmtDur=sec=>{sec=Math.max(0,Math.round(sec));const d=Math.floor(sec/86400),h=Math.floor(sec%86400/3600),m=Math.floor(sec%3600/60);return (d?d+'일 ':'')+(h?h+'시간 ':'')+m+'분';};
 function furnacePts(d){const c=buildsCost(d);return c.fc*up(ITEMS.fireCrystal.pts)+c.r*up(ITEMS.refinedFC.pts);}
 const CHARM_DEFAULT=CHARM_LEVELS.findIndex(L=>L.name==='12')+1; // 기본 선택 Lv.12
@@ -283,8 +287,8 @@ const DAYS=[
 const KEY='wos-svs-prep-v1';
 let state=load();
 function load(){
-  try{const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s&&s.days){ if(s.tab===6) s.tab=1; if(!s.speed) s.speed={research:0,other:0}; else if(s.speed.island!==undefined||s.speed.vip!==undefined||s.speed.minister!==undefined){ s.speed={research:Number(s.speed.research||0)+Number(s.speed.island||0)+Number(s.speed.vip||0)+Number(s.speed.minister||0),other:Number(s.speed.other||0)}; } if(!s.bonusDefault20){s.bonus=20;s.bonusDefault20=true;} for(const d of [1,2,5]){ if(!s.days[d].builds){ const f=s.days[d].furnace; s.days[d].builds=[f&&f.from?{b:'furnace',from:f.from,to:f.to}:freshBuild()]; } } for(const d of [1,3,4]){ if(!s.days[d].charms) s.days[d].charms=[freshCharm()]; s.days[d].charms=s.days[d].charms.map(c=>({to:Number(c.to||c.lv||0)})); } return s; }}catch(e){}
-  return {tab:1,bonus:20,bonusDefault20:true,speed:{research:0,other:0},days:{1:freshDay(1),2:freshDay(2),3:freshDay(3),4:freshDay(4),5:freshDay(5)}};
+  try{const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s&&s.days){ if(s.tab===6) s.tab=1; if(!s.speed) s.speed={research:0,minister:false}; else if(typeof s.speed.minister!=='boolean'){ s.speed={research:Number(s.speed.research||0)+Number(s.speed.island||0)+Number(s.speed.vip||0)+Number(s.speed.minister||0)+Number(s.speed.other||0),minister:false}; } if(!s.bonusDefault20){s.bonus=20;s.bonusDefault20=true;} for(const d of [1,2,5]){ if(!s.days[d].builds){ const f=s.days[d].furnace; s.days[d].builds=[f&&f.from?{b:'furnace',from:f.from,to:f.to}:freshBuild()]; } } for(const d of [1,3,4]){ if(!s.days[d].charms) s.days[d].charms=[freshCharm()]; s.days[d].charms=s.days[d].charms.map(c=>({to:Number(c.to||c.lv||0)})); } return s; }}catch(e){}
+  return {tab:1,bonus:20,bonusDefault20:true,speed:{research:0,minister:false},days:{1:freshDay(1),2:freshDay(2),3:freshDay(3),4:freshDay(4),5:freshDay(5)}};
 }
 function save(){
   try{localStorage.setItem(KEY,JSON.stringify(state));document.getElementById('saved').textContent='자동 저장됨 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});}catch(e){}
@@ -417,7 +421,7 @@ function furnaceHTML(d){
 function speedHTML(d){
   const ds=state.days[d], tc=buildsCost(d), pct=speedTotal(), real=tc.t/(1+pct/100), mins=Math.ceil(real/60);
   return `<div class="section"><h3>건설 속도 버프 · 합계 +${fmt1(pct)}%</h3><div class="list">
-    <div class="row troops-like"><div class="speed-grid">${SPEED_KEYS.map(([k,label])=>`<label><span>${label}</span><span class="pct"><input type="text" class="n" inputmode="decimal" data-speed="${k}" value="${(state.speed[k]||'')}" placeholder="0"><em>%</em></span></label>`).join('')}</div></div>
+    <div class="row troops-like"><div class="speed-grid">${SPEED_KEYS.map(([k,label])=>`<label><span>${label}</span><span class="pct"><input type="text" class="n" inputmode="decimal" data-speed="${k}" value="${(state.speed[k]||'')}" placeholder="0"><em>%</em></span></label>`).join('')}<label class="chk"><input type="checkbox" id="ministerChk"${state.speed.minister?' checked':''}><span>집행관 버프 <b>+${MINISTER_PCT}%</b></span></label></div></div>
     ${tc.t?`<div class="bsum"><div class="speed-res"><div><small>기본 건설 시간</small><b>${fmtDur(tc.t)}</b></div><div><small>버프 적용 후</small><b>${fmtDur(real)}</b></div><div><small>필요 건설 가속</small><b>${fmt(mins)}분</b></div></div>
     <div class="foot-btns"><button type="button" class="mini" data-applyspeed="${d}">${Number(ds.q.spConstruction||0)===mins?'✓ 건설 가속 칸에 들어가 있음':'아래 건설 가속 아이템 칸에 넣기'}</button></div></div>`:`<div class="list-foot"><span class="got">위에서 건물을 고르면 이 날짜의 건설 시간과 필요한 가속을 계산합니다</span></div>`}
   </div>
@@ -441,6 +445,7 @@ function bindFurnace(panel,d){
   });
   panel.querySelectorAll('[data-builddel]').forEach(x=>x.addEventListener('click',()=>{const i=Number(x.dataset.builddel); if(i===0) ds.builds[0]={b:ds.builds[0].b,from:0,to:0}; else ds.builds.splice(i,1); save(); render();}));
   panel.querySelectorAll('input[data-speed]').forEach(el=>el.addEventListener('input',e=>{state.speed[e.target.dataset.speed]=num(e.target.value); save(); softUpdate();}));
+  const mc=panel.querySelector('#ministerChk'); if(mc) mc.addEventListener('change',e=>{state.speed.minister=!!e.target.checked; save(); render();});
   const ap=panel.querySelector('[data-applyspeed]'); if(ap) ap.addEventListener('click',()=>{const tc=buildsCost(d); const mins=Math.ceil(tc.t/(1+speedTotal()/100)/60); if(ds.q.spConstruction&&Number(ds.q.spConstruction)!==mins&&!confirm('이미 입력된 건설 가속 시간을 덮어쓸까요?')) return; ds.q.spConstruction=mins; save(); render();});
   const add=panel.querySelector('[data-addbuild]'); if(add) add.addEventListener('click',()=>{const used=new Set(ds.builds.map(o=>o.b)); const next=BUILD_KEYS.find(k=>!used.has(k)); if(!next) return; ds.builds.push({b:next,from:0,to:0});save();render();});
   const clr=panel.querySelector('[data-clearbuild]'); if(clr) clr.addEventListener('click',()=>{ if(!confirm('이 날짜의 건물 줄을 모두 초기화할까요? (첫 줄은 남고 나머지는 삭제됩니다)')) return; ds.builds=[{b:(ds.builds[0]&&ds.builds[0].b)||'furnace',from:0,to:0}]; save(); render(); });
