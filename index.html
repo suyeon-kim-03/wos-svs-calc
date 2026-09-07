@@ -94,7 +94,9 @@ select{text-align:left;width:auto;padding-right:6px}
 .troops .row .got{grid-column:1}
 .troops .kind{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.06em;margin-right:2px}
 .mini{font:inherit;font-size:13px;color:var(--accent-ink);background:none;border:1px dashed var(--accent);border-radius:8px;padding:6px 12px;cursor:pointer}
-.x{font:inherit;font-size:13px;color:var(--muted);background:none;border:0;cursor:pointer;padding:4px 6px}
+.x{font:inherit;font-size:13px;font-weight:500;color:var(--accent-ink);background:var(--surface);border:1px solid var(--accent);border-radius:8px;cursor:pointer;padding:6px 10px;line-height:1.2;white-space:nowrap;flex:0 0 auto;margin-left:auto}
+.x:active{background:var(--accent-soft)}
+.charm-ctl select{flex:1 1 auto;min-width:0;max-width:100%}
 .steps{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--muted);padding:2px 0 2px 4px;border-left:2px solid var(--line-soft)}
 .step{display:flex;justify-content:space-between;gap:12px}
 .step .num{color:var(--ink)}
@@ -302,7 +304,7 @@ function troopsHTML(){
         ${t.kind==='promote'?`<select data-troop="${i}" data-f="from">${opts(t.from)}</select><span class="unit">→</span>`:''}
         <select data-troop="${i}" data-f="to">${opts(t.to)}</select>
         <input type="number" min="0" inputmode="numeric" data-troop="${i}" data-f="n" value="${t.n||''}" placeholder="0" style="width:110px"><span class="unit">명</span>
-        <button type="button" class="x" data-troopdel="${i}" aria-label="줄 삭제">삭제</button>
+        <button type="button" class="x" data-troopdel="${i}" aria-label="이 병력 줄 삭제">✕ 삭제</button>
       </div>
       <div class="got"><span class="rate">${rate}</span> &nbsp;→&nbsp; <span class="num">${fmt(p)}</span>점</div>
     </div>`;
@@ -318,9 +320,9 @@ function charmsHTML(d){
   const rows=list.map((c,i)=>{
     const L=CHARM_LEVELS[c.to-1]||CHARM_LEVELS[0],p=charmPts(c);
     return `<div class="row${p?' active':''}">
-      <div class="ctl">
+      <div class="ctl charm-ctl">
         <span class="unit">목표 단계</span><select data-charm="${i}" data-f="to">${opts(c.to)}</select>
-        <button type="button" class="x" data-charmdel="${i}" aria-label="줄 삭제">삭제</button>
+        <button type="button" class="x" data-charmdel="${i}" aria-label="이 보석 줄 삭제">✕ 삭제</button>
       </div>
       <div class="got">평점 <span class="num">${fmt(L.score)}</span> × <span class="num">${fmt1(pt)}</span>점 &nbsp;→&nbsp; <span class="num">${fmt(p)}</span>점</div>
     </div>`;
