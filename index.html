@@ -226,7 +226,7 @@ const freshCharm=()=>({to:CHARM_DEFAULT});
 const freshDay=d=>({q:{}, ...([1,2,5].includes(d)?{furnace:{from:FURNACE_DEFAULT_FROM,to:FURNACE_DEFAULT_TO}}:{}), ...(d===4?{troops:[{kind:'promote',from:9,to:10,n:0}]}:{}), ...([1,3,4].includes(d)?{charms:[freshCharm()]}:{})});
 const DAYS=[
   {n:1,ko:'도시 건설',en:'City Construction',
-   groups:[['점수 항목',['refinedFC','fireCrystal','fcShard','spConstruction','spResearch','spTraining','spExpert']]],charm:true},
+   groups:[['점수 항목',['refinedFC','fireCrystal','fcShard','spConstruction','spResearch','spTraining','spExpert']]],charm:true,furnace:true},
   {n:2,ko:'연구',en:'Research Day',
    groups:[['점수 항목',['fcShard','spResearch','luckyWheel','rareShard','epicShard','mythicShard','expertSigil','bookOfKnowledge','gatherMeat','gatherWood','gatherCoal','gatherIron','fireCrystal','refinedFC','spConstruction','spTraining','spExpert']]],furnace:true},
   {n:3,ko:'야수 처치',en:'Beast Slay',
