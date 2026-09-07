@@ -135,6 +135,9 @@ select{text-align:left;width:auto;padding:7px 6px 7px 8px;font-family:"IBM Plex 
 .speed-grid label.chk{flex-direction:row;align-items:center;gap:8px;align-self:end;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);color:var(--ink);font-size:14px;font-weight:500;cursor:pointer}
 .speed-grid label.chk input{width:18px;height:18px;accent-color:var(--accent);margin:0}
 .speed-grid label.chk b{color:var(--accent-ink);font-weight:600}
+.speed-grid{grid-template-columns:minmax(0,1fr) auto auto;align-items:end}
+.speed-grid .speed-reset{margin-left:0;align-self:end;padding:9px 10px}
+@media (max-width:560px){.speed-grid{grid-template-columns:1fr 1fr}.speed-grid label:first-child{grid-column:1/-1}}
 .speed-res{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .speed-res div{display:flex;flex-direction:column;gap:2px;background:var(--surface-2);border-radius:8px;padding:8px 10px}
 .speed-res small{font-size:11px;color:var(--muted)}
@@ -423,7 +426,7 @@ function furnaceHTML(d){
 function speedHTML(d){
   const tc=buildsCost(d), pct=speedTotal(), real=tc.t/(1+pct/100), mins=speedMins(d), spPt=up(ITEMS.spConstruction.pts), pts=speedPts(d);
   return `<div class="section"><h3>건설 속도 버프 · 합계 +${fmt1(pct)}% · 건설 가속 1분 ${fmt1(spPt)}점</h3><div class="list">
-    <div class="row troops-like"><div class="speed-grid">${SPEED_KEYS.map(([k,label])=>`<label><span>${label}</span><span class="pct"><input type="text" class="n" inputmode="decimal" data-speed="${k}" value="${(state.speed[k]||'')}" placeholder="0"><em>%</em></span></label>`).join('')}<label class="chk"><input type="checkbox" id="ministerChk"${state.speed.minister?' checked':''}><span>집행관 버프 <b>+${MINISTER_PCT}%</b></span></label></div></div>
+    <div class="row troops-like"><div class="speed-grid">${SPEED_KEYS.map(([k,label])=>`<label><span>${label}</span><span class="pct"><input type="text" class="n" inputmode="decimal" data-speed="${k}" value="${(state.speed[k]||'')}" placeholder="0"><em>%</em></span></label>`).join('')}<label class="chk"><input type="checkbox" id="ministerChk"${state.speed.minister?' checked':''}><span>집행관 버프 <b>+${MINISTER_PCT}%</b></span></label><button type="button" class="x speed-reset" id="speedReset" aria-label="건설 속도 버프 초기화">↺ 초기화</button></div></div>
     ${tc.t?`<div class="bsum"><div class="speed-res"><div><small>기본 건설 시간</small><b>${fmtDur(tc.t)}</b></div><div><small>버프 적용 후</small><b>${fmtDur(real)}</b></div><div><small>필요 건설 가속</small><b>${fmt(mins)}분</b></div></div>
     <div class="ftotal"><span>건설 가속 점수 <small style="font-weight:400;color:var(--muted)">${fmt(mins)}분 × ${fmt1(spPt)}점</small></span><span class="num">${fmt(pts)}<small>점</small></span></div></div>`:`<div class="list-foot"><span class="got">위에서 건물을 고르면 이 날짜의 건설 시간과 필요한 가속, 건설 가속 점수를 계산합니다</span></div>`}
   </div>
@@ -448,6 +451,7 @@ function bindFurnace(panel,d){
   panel.querySelectorAll('[data-builddel]').forEach(x=>x.addEventListener('click',()=>{const i=Number(x.dataset.builddel); if(i===0) ds.builds[0]={b:ds.builds[0].b,from:0,to:0}; else ds.builds.splice(i,1); save(); render();}));
   panel.querySelectorAll('input[data-speed]').forEach(el=>el.addEventListener('input',e=>{state.speed[e.target.dataset.speed]=num(e.target.value); save(); softUpdate();}));
   const mc=panel.querySelector('#ministerChk'); if(mc) mc.addEventListener('change',e=>{state.speed.minister=!!e.target.checked; save(); render();});
+  const sr=panel.querySelector('#speedReset'); if(sr) sr.addEventListener('click',()=>{state.speed={research:0,minister:false}; save(); render();});
   const add=panel.querySelector('[data-addbuild]'); if(add) add.addEventListener('click',()=>{const used=new Set(ds.builds.map(o=>o.b)); const next=BUILD_KEYS.find(k=>!used.has(k)); if(!next) return; ds.builds.push({b:next,from:0,to:0});save();render();});
   const clr=panel.querySelector('[data-clearbuild]'); if(clr) clr.addEventListener('click',()=>{ if(!confirm('이 날짜의 건물 줄을 모두 초기화할까요? (첫 줄은 남고 나머지는 삭제됩니다)')) return; ds.builds=[{b:(ds.builds[0]&&ds.builds[0].b)||'furnace',from:0,to:0}]; save(); render(); });
 }
