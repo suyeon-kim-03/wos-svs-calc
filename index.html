@@ -102,7 +102,7 @@ select{text-align:left;width:auto;padding:7px 6px 7px 8px;font-family:"IBM Plex 
 .charm-ctl select{flex:1 1 auto;min-width:0;max-width:100%}
 .build-ctl{justify-content:flex-start!important;flex-wrap:wrap;gap:8px 6px}
 .build-ctl select{flex:0 1 auto;min-width:0;max-width:100%}
-.build-ctl select.bsel{min-width:140px;font-weight:600}
+.build-ctl select.bsel{flex:1 1 auto;min-width:0;font-weight:600}
 .build-ctl .brk{flex-basis:100%;height:0}
 .lbl{font-size:14px;font-weight:500;color:var(--ink);white-space:nowrap}
 .steps{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--muted);padding:2px 0 2px 4px;border-left:2px solid var(--line-soft)}
@@ -385,7 +385,7 @@ function furnaceHTML(d){
     const bopts=BUILD_KEYS.filter(k=>k===b.b||!usedByOthers.has(k)).map(k=>`<option value="${k}"${b.b===k?' selected':''}>${BUILDINGS[k].ko}</option>`).join('');
     const lopts=(sel,mn)=>`<option value="0"${!sel?' selected':''}>선택 안 함</option>`+st.map((x,k)=>k<mn?'':`<option value="${k}"${sel===k?' selected':''}>${x[0]}</option>`).join('');
     return `<div class="row troops-like${on?' active':''}">
-      <div class="ctl build-ctl"><select data-build="${i}" data-f="b" class="bsel">${bopts}</select><span class="brk"></span><span class="lbl">현재</span><select data-build="${i}" data-f="from">${lopts(b.from,min)}</select><span class="lbl">→ 목표</span><select data-build="${i}" data-f="to">${lopts(b.to,min+1)}</select><button type="button" class="x" data-builddel="${i}" aria-label="${i===0?'첫 줄 초기화':'이 건물 줄 삭제'}">${i===0?'↺ 초기화':'✕ 삭제'}</button></div>
+      <div class="ctl build-ctl"><span class="lbl">건물 종류</span><select data-build="${i}" data-f="b" class="bsel">${bopts}</select><button type="button" class="x" data-builddel="${i}" aria-label="${i===0?'첫 줄 초기화':'이 건물 줄 삭제'}">${i===0?'↺ 초기화':'✕ 삭제'}</button><span class="brk"></span><span class="lbl">현재</span><select data-build="${i}" data-f="from">${lopts(b.from,min)}</select><span class="lbl">→ 목표</span><select data-build="${i}" data-f="to">${lopts(b.to,min+1)}</select></div>
     </div>`;
   }).join('');
   const tc=buildsCost(d), fcTotal=tc.fc*fcPt, rTotal=tc.r*rPt, total=fcTotal+rTotal;
