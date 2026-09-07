@@ -365,6 +365,12 @@ function bind(panel,d){
       const c=ds.charms[Number(e.target.dataset.charm)],f=e.target.dataset.f;
       c[f]=Math.max(0,Number(e.target.value||0)); save(); render();
     }));
+    // '선택 안 함' 상태에서 셀렉트를 누르면 Lv.12로 미리 맞춰 목록이 Lv.12 근처에서 열리게 함
+    panel.querySelectorAll('select[data-charm][data-f="to"]').forEach(el=>{
+      const pre=()=>{const c=ds.charms[Number(el.dataset.charm)]; if(c&&!Number(c.to||0)){c.to=CHARM_DEFAULT; el.value=String(CHARM_DEFAULT); save();}};
+      el.addEventListener('pointerdown',pre); el.addEventListener('focus',pre);
+      el.addEventListener('blur',()=>render());
+    });
     panel.querySelectorAll('[data-charmdel]').forEach(b=>b.addEventListener('click',()=>{const i=Number(b.dataset.charmdel); if(i===0) ds.charms[0]={to:0}; else ds.charms.splice(i,1); save();render();}));
     panel.querySelector('[data-addcharm]').addEventListener('click',()=>{ds.charms.push(freshCharm());save();render();});
     panel.querySelector('[data-clearcharm]').addEventListener('click',()=>{if(!confirm('이 날짜의 보석 줄을 모두 지울까요?')) return; ds.charms=[{to:0}];save();render();});
