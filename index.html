@@ -58,15 +58,6 @@ h1{margin:2px 0 0;font-size:20px;font-weight:600;letter-spacing:-.01em;text-wrap
 .day-head h2{margin:0;font-size:18px;font-weight:600}
 .day-head h2 small{font-weight:500;color:var(--muted);font-size:13px;margin-left:6px}
 .day-head .num{font-size:24px;font-weight:700;color:var(--accent-ink)}
-.goal{background:var(--surface);border:1px solid var(--line-soft);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow)}
-.goal-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.goal-row label{font-size:13px;color:var(--muted);font-weight:500}
-.goal-row input{width:140px}
-.goal-row .rem{margin-left:auto;font-size:13px;color:var(--muted)}
-.goal-row .rem b{color:var(--ink);font-weight:600}
-.bar{height:8px;border-radius:4px;background:var(--line-soft);margin-top:10px;overflow:hidden}
-.bar i{display:block;height:100%;background:var(--accent);border-radius:4px;transition:width .25s}
-.bar i.done{background:var(--good)}
 
 .section{margin-top:18px}
 .section h3{margin:0 0 6px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:8px}
@@ -118,7 +109,6 @@ select{text-align:left;width:auto;padding-right:6px}
   .row .ctl{grid-column:1;grid-row:auto;justify-content:flex-start}
   .row .got{margin-top:-2px}
 }
-@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
 </style>
 </head>
 <body>
@@ -211,7 +201,7 @@ const KEY='wos-svs-prep-v1';
 let state=load();
 function load(){
   try{const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s&&s.days){ if(!s.bonusDefault20){s.bonus=20;s.bonusDefault20=true;} return s; }}catch(e){}
-  return {tab:1,bonus:20,bonusDefault20:true,days:{1:{q:{},goal:0},2:{q:{},goal:0},3:{q:{},goal:0},4:{q:{},goal:0,troops:[{kind:'promote',from:9,to:10,n:0}]},5:{q:{},goal:0}}};
+  return {tab:1,bonus:20,bonusDefault20:true,days:{1:{q:{}},2:{q:{}},3:{q:{}},4:{q:{},troops:[{kind:'promote',from:9,to:10,n:0}]},5:{q:{}}}};
 }
 function save(){
   try{localStorage.setItem(KEY,JSON.stringify(state));document.getElementById('saved').textContent='자동 저장됨 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});}catch(e){}
@@ -299,11 +289,7 @@ function troopsHTML(){
 function render(){
   renderTabs();
   const d=state.tab,day=DAYS[d-1],ds=state.days[d],total=dayTotal(d);
-  const goal=Number(ds.goal||0),pct=goal?Math.min(100,total/goal*100):0,rem=goal-total;
-  let html=`<div class="day-head"><h2>${day.n}일차 ${day.ko}<small>${day.en}</small></h2><span class="num">${fmt(total)}</span></div>
-  <div class="goal"><div class="goal-row"><label for="goal">목표 점수</label><input id="goal" type="number" min="0" step="10000" inputmode="numeric" value="${goal||''}" placeholder="예: 300000">
-    <span class="rem">${goal?(rem>0?`<b>${fmt(rem)}</b>점 남음`:`<b>달성</b> · ${fmt(-rem)}점 초과`):'목표를 넣으면 남은 점수를 보여줍니다'}</span></div>
-    <div class="bar"><i class="${goal&&rem<=0?'done':''}" style="width:${pct}%"></i></div></div>`;
+  let html=`<div class="day-head"><h2>${day.n}일차 ${day.ko}<small>${day.en}</small></h2><span class="num">${fmt(total)}</span></div>`;
   for(const [title,ids] of day.groups){
     html+=`<div class="section"><h3>${title}</h3><div class="list">${ids.map(id=>rowHTML(d,id,day.hot.includes(id))).join('')}</div></div>`;
   }
@@ -314,7 +300,6 @@ function render(){
 }
 function bind(panel,d){
   const ds=state.days[d];
-  panel.querySelector('#goal').addEventListener('input',e=>{ds.goal=Number(e.target.value||0);save();softUpdate();});
   panel.querySelectorAll('input[data-q]').forEach(inp=>inp.addEventListener('input',e=>{ds.q[e.target.dataset.q]=Math.max(0,Number(e.target.value||0));save();softUpdate();}));
   panel.querySelectorAll('input[data-time]').forEach(inp=>inp.addEventListener('input',e=>{
     const id=e.target.dataset.time; const parts={};
@@ -337,7 +322,7 @@ function bind(panel,d){
 function softUpdate(){
   const d=state.tab,panel=document.getElementById('panel'),day=DAYS[d-1];
   const scroll=window.scrollY, active=document.activeElement;
-  const sel=active&&active.dataset?(active.dataset.q?`input[data-q="${active.dataset.q}"]`:active.dataset.time?`input[data-time="${active.dataset.time}"][data-part="${active.dataset.part}"]`:active.dataset.troop!==undefined?`[data-troop="${active.dataset.troop}"][data-f="${active.dataset.f}"]`:active.id==='goal'?'#goal':null):null;
+  const sel=active&&active.dataset?(active.dataset.q?`input[data-q="${active.dataset.q}"]`:active.dataset.time?`input[data-time="${active.dataset.time}"][data-part="${active.dataset.part}"]`:active.dataset.troop!==undefined?`[data-troop="${active.dataset.troop}"][data-f="${active.dataset.f}"]`:null):null;
   const pos=active&&active.selectionStart;
   render();
   if(sel){const el=panel.querySelector(sel); if(el){el.focus({preventScroll:true}); try{el.setSelectionRange(pos,pos);}catch(e){}}}
@@ -350,7 +335,7 @@ document.getElementById('bonusUp').onclick=()=>{state.bonus=Math.min(20,Number(s
 syncBonus();
 document.getElementById('resetDay').onclick=()=>{
   const d=state.tab; if(!confirm(`${d}일차 입력을 모두 지울까요?`)) return;
-  state.days[d]={q:{},goal:state.days[d].goal, ...(d===4?{troops:[{kind:'promote',from:9,to:10,n:0}]}:{})}; save(); render();
+  state.days[d]={q:{}, ...(d===4?{troops:[{kind:'promote',from:9,to:10,n:0}]}:{})}; save(); render();
 };
 document.getElementById('resetAll').onclick=()=>{
   if(!confirm('5일치 입력을 모두 지울까요?')) return;
