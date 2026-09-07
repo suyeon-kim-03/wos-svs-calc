@@ -210,8 +210,8 @@ const DAYS=[
 const KEY='wos-svs-prep-v1';
 let state=load();
 function load(){
-  try{const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s&&s.days) return s;}catch(e){}
-  return {tab:1,bonus:8,days:{1:{q:{},goal:0},2:{q:{},goal:0},3:{q:{},goal:0},4:{q:{},goal:0,troops:[{kind:'promote',from:9,to:10,n:0}]},5:{q:{},goal:0}}};
+  try{const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s&&s.days){ if(!s.bonusDefault20){s.bonus=20;s.bonusDefault20=true;} return s; }}catch(e){}
+  return {tab:1,bonus:20,bonusDefault20:true,days:{1:{q:{},goal:0},2:{q:{},goal:0},3:{q:{},goal:0},4:{q:{},goal:0,troops:[{kind:'promote',from:9,to:10,n:0}]},5:{q:{},goal:0}}};
 }
 function save(){
   try{localStorage.setItem(KEY,JSON.stringify(state));document.getElementById('saved').textContent='자동 저장됨 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});}catch(e){}
