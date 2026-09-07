@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>영주 대결 준비 계산기</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#EDF2F7; --surface:#FFFFFF; --surface-2:#F5F8FB; --ink:#16233A; --muted:#5B6B82;
+  --line:#CBD6E2; --line-soft:#E1E8F0; --accent:#E2601F; --accent-ink:#B44712; --accent-soft:#FBE9DF;
+  --good:#2E8B6A; --good-soft:#DDF2E9; --tab-active:#16233A; --tab-active-ink:#FFFFFF;
+  --shadow:0 1px 2px rgba(22,35,58,.06),0 6px 20px rgba(22,35,58,.06);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1726; --surface:#182238; --surface-2:#1F2B45; --ink:#E8EEF6; --muted:#93A3B8;
+    --line:#2B3A52; --line-soft:#243149; --accent:#F0733A; --accent-ink:#FFB38A; --accent-soft:#3A2418;
+    --good:#5DBE96; --good-soft:#1B3A2E; --tab-active:#F0733A; --tab-active-ink:#0F1726;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1726; --surface:#182238; --surface-2:#1F2B45; --ink:#E8EEF6; --muted:#93A3B8;
+  --line:#2B3A52; --line-soft:#243149; --accent:#F0733A; --accent-ink:#FFB38A; --accent-soft:#3A2418;
+  --good:#5DBE96; --good-soft:#1B3A2E; --tab-active:#F0733A; --tab-active-ink:#0F1726;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans KR",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:15px;line-height:1.5;-webkit-text-size-adjust:100%}
+.num{font-family:"Barlow Condensed","IBM Plex Sans KR",sans-serif;font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.wrap{max-width:720px;margin:0 auto;padding:0 14px 60px}
+
+/* header */
+.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:14px 0 10px;border-bottom:1px solid var(--line-soft)}
+.top-row{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{margin:2px 0 0;font-size:20px;font-weight:600;letter-spacing:-.01em;text-wrap:balance}
+.total{text-align:right}
+.total .num{font-size:34px;font-weight:700;line-height:1;color:var(--accent-ink)}
+.total small{display:block;font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.tabs{display:flex;gap:6px;margin-top:12px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.tabs::-webkit-scrollbar{display:none}
+.bonus{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+.bonus label{font-size:13px;color:var(--muted);font-weight:500}
+.bonus .hint{font-size:11px;color:var(--muted);flex-basis:100%}
+.bonus .stepper input{width:58px}
+.tab{flex:1 0 auto;min-width:96px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:7px 10px;text-align:left;cursor:pointer;font:inherit}
+.tab b{display:block;font-size:12px;font-weight:600;line-height:1.2}
+.tab span{display:block;font-size:11px;color:var(--muted);line-height:1.2}
+.tab .num{display:block;font-size:17px;font-weight:700;margin-top:3px;line-height:1}
+.tab[aria-selected="true"]{background:var(--tab-active);color:var(--tab-active-ink);border-color:var(--tab-active)}
+.tab[aria-selected="true"] span{color:inherit;opacity:.75}
+.tab:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* day panel */
+.day-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:18px 0 8px}
+.day-head h2{margin:0;font-size:18px;font-weight:600}
+.day-head h2 small{font-weight:500;color:var(--muted);font-size:13px;margin-left:6px}
+.day-head .num{font-size:24px;font-weight:700;color:var(--accent-ink)}
+.goal{background:var(--surface);border:1px solid var(--line-soft);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow)}
+.goal-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.goal-row label{font-size:13px;color:var(--muted);font-weight:500}
+.goal-row input{width:140px}
+.goal-row .rem{margin-left:auto;font-size:13px;color:var(--muted)}
+.goal-row .rem b{color:var(--ink);font-weight:600}
+.bar{height:8px;border-radius:4px;background:var(--line-soft);margin-top:10px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:4px;transition:width .25s}
+.bar i.done{background:var(--good)}
+
+.section{margin-top:18px}
+.section h3{margin:0 0 6px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:8px}
+.section h3::after{content:"";flex:1;height:1px;background:var(--line-soft)}
+.list{background:var(--surface);border:1px solid var(--line-soft);border-radius:12px;box-shadow:var(--shadow);overflow:hidden}
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;padding:10px 14px;border-top:1px solid var(--line-soft);align-items:center}
+.row:first-child{border-top:0}
+.row .name{min-width:0;font-weight:500;font-size:14px;line-height:1.3}
+.row .name small{display:block;color:var(--muted);font-weight:400;font-size:12px}
+.row .rate{font-size:12px;color:var(--muted)}
+.row .rate .num{color:var(--accent-ink);font-weight:600;font-size:14px}
+.row .ctl{display:flex;align-items:center;gap:6px;justify-content:flex-end;grid-column:2;grid-row:1/3}
+.row .got{grid-column:1;font-size:12px;color:var(--muted)}
+.row .got .num{font-size:15px;font-weight:600;color:var(--ink)}
+.row.active{background:var(--accent-soft)}
+.hot{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.06em;color:var(--accent-ink);border:1px solid var(--accent);border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:middle;line-height:16px}
+
+input[type=number],select{font:inherit;font-size:16px;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;width:96px;text-align:right}
+input[type=number]{font-family:"Barlow Condensed","IBM Plex Sans KR",sans-serif;font-weight:600;font-size:18px;font-variant-numeric:tabular-nums}
+input[type=number]::-webkit-inner-spin-button{opacity:1}
+select{text-align:left;width:auto;padding-right:6px}
+.unit{font-size:12px;color:var(--muted);min-width:1.5em}
+.time{display:flex;gap:4px;align-items:center}
+.time input{width:62px}
+.time .unit{min-width:auto}
+.stepper{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.stepper button{font:inherit;font-size:18px;line-height:1;width:34px;height:36px;border:0;background:var(--surface-2);color:var(--ink);cursor:pointer}
+.stepper button:active{background:var(--accent-soft)}
+.stepper input{border:0;border-left:1px solid var(--line);border-right:1px solid var(--line);border-radius:0;width:64px;text-align:center}
+
+/* troops */
+.troops .row{grid-template-columns:1fr}
+.troops .row .ctl{grid-column:1;grid-row:auto;justify-content:flex-start;flex-wrap:wrap}
+.troops .row .got{grid-column:1}
+.troops .kind{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.06em;margin-right:2px}
+.mini{font:inherit;font-size:13px;color:var(--accent-ink);background:none;border:1px dashed var(--accent);border-radius:8px;padding:6px 12px;cursor:pointer}
+.x{font:inherit;font-size:13px;color:var(--muted);background:none;border:0;cursor:pointer;padding:4px 6px}
+.list-foot{padding:10px 14px;border-top:1px solid var(--line-soft);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+
+.tools{display:flex;justify-content:space-between;gap:10px;margin-top:22px;flex-wrap:wrap}
+.btn{font:inherit;font-size:13px;font-weight:500;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer}
+.btn.warn{color:var(--accent-ink);border-color:var(--accent)}
+.note{margin-top:26px;font-size:12.5px;color:var(--muted);line-height:1.6}
+.note p{margin:0 0 6px}
+.note b{color:var(--ink);font-weight:600}
+.saved{font-size:11px;color:var(--muted);text-align:right;margin-top:4px}
+@media (max-width:600px){
+  .row{grid-template-columns:minmax(0,1fr)}
+  .row .ctl{grid-column:1;grid-row:auto;justify-content:flex-start}
+  .row .got{margin-top:-2px}
+}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="top-row">
+      <div>
+        <div class="eyebrow">Whiteout Survival · SvS Prep</div>
+        <h1>영주 대결 준비 계산기</h1>
+      </div>
+      <div class="total"><small>5일 합계</small><div class="num" id="grand">0</div></div>
+    </div>
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div class="bonus"><label for="bonus">발레리아 도움 보너스</label><span class="stepper"><button type="button" id="bonusDown" aria-label="4% 내리기">−</button><input id="bonus" type="number" min="0" max="100" step="4" inputmode="numeric"><button type="button" id="bonusUp" aria-label="4% 올리기">+</button></span><span class="unit">%</span><span class="hint">게임 점수표 위에 "획득하는 포인트 +N%"로 표시되는 값</span></div>
+  </header>
+
+  <main id="panel"></main>
+
+  <div class="tools">
+    <button class="btn" id="resetDay">이 날짜만 지우기</button>
+    <button class="btn warn" id="resetAll">전체 지우기</button>
+  </div>
+  <div class="saved" id="saved"></div>
+
+  <section class="note">
+    <p><b>점수 기준</b> · 2026-09-07 게임 안 점수표 스크린샷(1·3·4·5일차)과 대조해 확인한 기본값입니다. 미스릴 144,000, 병사 1~11급 3·4·5·8·12·18·25·35·45·60·75점 모두 게임과 일치합니다. 2일차 항목은 해외 계산기 값이라 게임 화면과 대조가 필요합니다.</p>
+    <p><b>발레리아 보너스</b> · 게임은 모든 항목에 발레리아 도움 보너스(+8%, +20% 등)를 곱해서 보여줍니다. 위에서 본인 보너스를 맞추면 게임과 같은 숫자가 나옵니다.</p>
+    <p><b>가속</b> · 일·시간·분을 넣으면 분 단위로 환산해 1분당 30점으로 계산합니다.</p>
+    <p><b>병력 승급</b> · 승급 점수는 목표 등급 점수에서 원래 등급 점수를 뺀 값입니다. 훈련은 4일차에 <em>완료</em>되어야 점수가 붙습니다.</p>
+    <p><b>채집</b> · 채집량 자체를 입력하면 고기·나무 1,000당, 석탄 200당, 철 50당 2점으로 계산합니다.</p>
+    <p>입력값은 이 브라우저에 자동 저장됩니다.</p>
+  </section>
+</div>
+
+<script>
+const ITEMS = {
+  chiefCharm:{ko:'영주 보석 최고 평점 +1',en:'Chief Charm Score',pts:70,unit:'점'},
+  chiefGear:{ko:'영주 장비 최고 평점 +1',en:'Chief Gear Score · 영주 보석 제외',pts:36,unit:'점'},
+  fireCrystal:{ko:'불의 수정',en:'건물 업그레이드에 소모',pts:2000,unit:'개'},
+  refinedFC:{ko:'제련된 불의 수정',en:'건물 업그레이드에 소모',pts:30000,unit:'개'},
+  fcShard:{ko:'불의 수정 조각',en:'과학 기술 연구에 소모',pts:1000,unit:'개'},
+  spConstruction:{ko:'건설 가속 아이템',en:'다이아 가속 제외',pts:30,time:true},
+  spResearch:{ko:'과학 기술 연구 가속 아이템',en:'다이아 가속 제외',pts:30,time:true},
+  spTraining:{ko:'병사 훈련·승급 가속 아이템',en:'다이아 가속 제외',pts:30,time:true},
+  spExpert:{ko:'전문가 스킬 학습 가속',en:'다이아 가속 불포함',pts:30,time:true},
+  luckyWheel:{ko:'행운의 룰렛 참여',en:'Lucky Wheel',pts:8000,unit:'회'},
+  rareShard:{ko:'레어 영웅 파편',en:'영웅 성급업에 소모',pts:350,unit:'개'},
+  epicShard:{ko:'에픽 영웅 파편',en:'영웅 성급업에 소모',pts:1220,unit:'개'},
+  mythicShard:{ko:'레전드 영웅 파편',en:'영웅 성급업에 소모',pts:3040,unit:'개'},
+  gatherMeat:{ko:'고기 채집',en:'1,000당 2점',pts:2,per:1000,unit:''},
+  gatherWood:{ko:'나무 채집',en:'1,000당 2점',pts:2,per:1000,unit:''},
+  gatherCoal:{ko:'석탄 채집',en:'200당 2점',pts:2,per:200,unit:''},
+  gatherIron:{ko:'철 채집',en:'50당 2점',pts:2,per:50,unit:''},
+  expertSigil:{ko:'전문가 표식',en:'공용 표식은 포함하지 않음',pts:6000,unit:'개'},
+  bookOfKnowledge:{ko:'학문의 책',en:'Book of Knowledge',pts:60,unit:'권'},
+  petScore:{ko:'펫 돌파 평점 +1',en:'Pet Advancement Score',pts:50,unit:'점'},
+  advWildMark:{ko:'고급 야성의 표식',en:'펫 단련에 소모',pts:15000,unit:'개'},
+  commonWildMark:{ko:'일반 야성의 표식',en:'펫 단련에 소모',pts:1150,unit:'개'},
+  polarTerror:{ko:'빙원 괴수 집결 사냥',en:'집결 개시하여 1마리 사냥',pts:30000,unit:'마리'},
+  beast1:{ko:'야수 Lv.1~10 처치',en:'Beast Lv.1–10',pts:9000,unit:'마리'},
+  beast11:{ko:'야수 Lv.11~15 처치',en:'Beast Lv.11–15',pts:9750,unit:'마리'},
+  beast16:{ko:'야수 Lv.16~20 처치',en:'Beast Lv.16–20',pts:10500,unit:'마리'},
+  beast21:{ko:'야수 Lv.21~25 처치',en:'Beast Lv.21–25',pts:11250,unit:'마리'},
+  beast26:{ko:'야수 Lv.26~30 처치',en:'Beast Lv.26–30',pts:12000,unit:'마리'},
+  essenceStone:{ko:'영웅 장비 마스터리 에너지석',en:'Essence Stone',pts:4000,unit:'개'},
+  widget:{ko:'영웅 전용 장비 부속품',en:'Widget',pts:8000,unit:'개'},
+  mithril:{ko:'미스릴',en:'Mithril',pts:144000,unit:'개'},
+};
+const TROOP_PTS=[3,4,5,8,12,18,25,35,45,60,75]; // T1..T11
+const DAYS=[
+  {n:1,ko:'도시 건설',en:'City Construction',
+   hot:['fireCrystal','refinedFC','spConstruction','chiefCharm'],
+   groups:[['핵심 항목',['fireCrystal','refinedFC','spConstruction','chiefCharm']],['같이 계산되는 항목',['fcShard','spResearch','spTraining','spExpert']]]},
+  {n:2,ko:'연구',en:'Research Day',
+   hot:['fcShard','spResearch','luckyWheel','mythicShard','epicShard','rareShard','expertSigil'],
+   groups:[['핵심 항목',['fcShard','spResearch','luckyWheel','rareShard','epicShard','mythicShard','expertSigil','bookOfKnowledge']],['채집',['gatherMeat','gatherWood','gatherCoal','gatherIron']],['같이 계산되는 항목',['fireCrystal','refinedFC','spConstruction','spTraining','spExpert']]]},
+  {n:3,ko:'야수 처치',en:'Beast Slay',
+   hot:['polarTerror','beast26','advWildMark','petScore'],
+   groups:[['사냥',['polarTerror','beast1','beast11','beast16','beast21','beast26']],['펫 · 영주',['petScore','advWildMark','commonWildMark','chiefCharm']],['같이 계산되는 항목',['luckyWheel','rareShard','epicShard','mythicShard','expertSigil','bookOfKnowledge']]]},
+  {n:4,ko:'영웅 성장',en:'Hero Development · 병사 훈련',
+   hot:['mithril','widget','essenceStone'],
+   groups:[['영웅 장비',['mithril','widget','essenceStone','chiefCharm']]],troops:true},
+  {n:5,ko:'전투력 부스트',en:'Power Boost',
+   hot:['mithril','chiefGear','refinedFC','fireCrystal','advWildMark'],
+   groups:[['영웅 · 영주 · 펫',['mithril','widget','essenceStone','chiefGear','petScore','advWildMark','commonWildMark']],['건설 · 연구 · 가속',['refinedFC','fireCrystal','fcShard','spConstruction','spResearch','spTraining','spExpert']]]},
+];
+
+const KEY='wos-svs-prep-v1';
+let state=load();
+function load(){
+  try{const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s&&s.days) return s;}catch(e){}
+  return {tab:1,bonus:8,days:{1:{q:{},goal:0},2:{q:{},goal:0},3:{q:{},goal:0},4:{q:{},goal:0,troops:[{kind:'promote',from:9,to:10,n:0}]},5:{q:{},goal:0}}};
+}
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify(state));document.getElementById('saved').textContent='자동 저장됨 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});}catch(e){}
+}
+const fmt=n=>Math.round(n).toLocaleString('ko-KR');
+const fmt1=n=>(Math.round(n*10)/10).toLocaleString('ko-KR',{maximumFractionDigits:1});
+const mult=()=>1+Number(state.bonus||0)/100;
+const up=v=>v*mult();
+const qty=(d,id)=>Number(state.days[d].q[id]||0);
+function itemPts(d,id){
+  const it=ITEMS[id],q=qty(d,id);
+  if(it.per) return Math.floor(q/it.per)*up(it.pts);
+  return q*up(it.pts);
+}
+function troopPts(t){
+  const n=Number(t.n||0); if(!n) return 0;
+  if(t.kind==='train') return n*up(TROOP_PTS[t.to-1]);
+  const diff=TROOP_PTS[t.to-1]-TROOP_PTS[t.from-1];
+  return diff>0?n*up(diff):0;
+}
+function dayTotal(d){
+  const day=DAYS[d-1]; let s=0;
+  for(const [,ids] of day.groups) for(const id of ids) s+=itemPts(d,id);
+  if(day.troops) for(const t of state.days[4].troops) s+=troopPts(t);
+  return s;
+}
+
+/* rendering */
+function renderTabs(){
+  const el=document.getElementById('tabs'); el.innerHTML='';
+  let grand=0;
+  for(const day of DAYS){
+    const t=dayTotal(day.n); grand+=t;
+    const b=document.createElement('button');
+    b.className='tab'; b.setAttribute('role','tab'); b.setAttribute('aria-selected',String(state.tab===day.n));
+    b.innerHTML=`<b>${day.n}일차</b><span>${day.ko}</span><span class="num">${fmt(t)}</span>`;
+    b.onclick=()=>{state.tab=day.n;save();render();};
+    el.appendChild(b);
+  }
+  document.getElementById('grand').textContent=fmt(grand);
+}
+function timeParts(min){min=Number(min||0);return {d:Math.floor(min/1440),h:Math.floor(min%1440/60),m:Math.floor(min%60)};}
+function rowHTML(d,id,hot){
+  const it=ITEMS[id],q=qty(d,id),p=itemPts(d,id);
+  const tag=hot?'<span class="hot">추천</span>':'';
+  let ctl;
+  if(it.time){
+    const t=timeParts(q);
+    ctl=`<div class="time">
+      <input type="number" min="0" inputmode="numeric" data-time="${id}" data-part="d" value="${t.d||''}" placeholder="0"><span class="unit">일</span>
+      <input type="number" min="0" inputmode="numeric" data-time="${id}" data-part="h" value="${t.h||''}" placeholder="0"><span class="unit">시간</span>
+      <input type="number" min="0" inputmode="numeric" data-time="${id}" data-part="m" value="${t.m||''}" placeholder="0"><span class="unit">분</span></div>`;
+  }else if(it.per){
+    ctl=`<input type="number" min="0" step="${it.per}" inputmode="numeric" data-q="${id}" value="${q||''}" placeholder="0" style="width:120px">`;
+  }else{
+    ctl=`<div class="stepper"><button type="button" data-step="${id}" data-dir="-1" aria-label="하나 빼기">−</button><input type="number" min="0" inputmode="numeric" data-q="${id}" value="${q||''}" placeholder="0"><button type="button" data-step="${id}" data-dir="1" aria-label="하나 더하기">+</button></div><span class="unit">${it.unit||''}</span>`;
+  }
+  const rate=it.time?`<span class="num">${fmt1(up(it.pts))}</span>점 / 1분`:it.per?`<span class="num">${fmt1(up(it.pts))}</span>점 / ${it.per.toLocaleString('ko-KR')}`:`<span class="num">${fmt1(up(it.pts))}</span>점 / 1${it.unit||''}`;
+  return `<div class="row${q?' active':''}">
+    <div class="name">${it.ko}${tag}<small>${it.en}</small></div>
+    <div class="ctl">${ctl}</div>
+    <div class="got"><span class="rate">${rate}</span> &nbsp;→&nbsp; <span class="num">${fmt(p)}</span>점</div>
+  </div>`;
+}
+function troopsHTML(){
+  const rows=state.days[4].troops.map((t,i)=>{
+    const opts=(sel)=>TROOP_PTS.map((p,k)=>`<option value="${k+1}"${sel===k+1?' selected':''}>${k+1}급 (${fmt1(up(p))}점)</option>`).join('');
+    const p=troopPts(t);
+    const rate=t.kind==='train'?`${fmt1(up(TROOP_PTS[t.to-1]))}점 / 1명`:`${fmt1(up(Math.max(0,TROOP_PTS[t.to-1]-TROOP_PTS[t.from-1])))}점 / 1명`;
+    return `<div class="row${Number(t.n)?' active':''}">
+      <div class="ctl">
+        <select data-troop="${i}" data-f="kind"><option value="promote"${t.kind==='promote'?' selected':''}>승급</option><option value="train"${t.kind==='train'?' selected':''}>훈련</option></select>
+        ${t.kind==='promote'?`<select data-troop="${i}" data-f="from">${opts(t.from)}</select><span class="unit">→</span>`:''}
+        <select data-troop="${i}" data-f="to">${opts(t.to)}</select>
+        <input type="number" min="0" inputmode="numeric" data-troop="${i}" data-f="n" value="${t.n||''}" placeholder="0" style="width:110px"><span class="unit">명</span>
+        <button type="button" class="x" data-troopdel="${i}" aria-label="줄 삭제">삭제</button>
+      </div>
+      <div class="got"><span class="rate">${rate}</span> &nbsp;→&nbsp; <span class="num">${fmt(p)}</span>점</div>
+    </div>`;
+  }).join('');
+  const sub=state.days[4].troops.reduce((s,t)=>s+troopPts(t),0);
+  return `<div class="section troops"><h3>병력 훈련 · 승급</h3><div class="list">${rows}
+    <div class="list-foot"><button type="button" class="mini" id="addTroop">+ 줄 추가</button><span class="got">병력 소계 <span class="num">${fmt(sub)}</span>점</span></div></div></div>`;
+}
+function render(){
+  renderTabs();
+  const d=state.tab,day=DAYS[d-1],ds=state.days[d],total=dayTotal(d);
+  const goal=Number(ds.goal||0),pct=goal?Math.min(100,total/goal*100):0,rem=goal-total;
+  let html=`<div class="day-head"><h2>${day.n}일차 ${day.ko}<small>${day.en}</small></h2><span class="num">${fmt(total)}</span></div>
+  <div class="goal"><div class="goal-row"><label for="goal">목표 점수</label><input id="goal" type="number" min="0" step="10000" inputmode="numeric" value="${goal||''}" placeholder="예: 300000">
+    <span class="rem">${goal?(rem>0?`<b>${fmt(rem)}</b>점 남음`:`<b>달성</b> · ${fmt(-rem)}점 초과`):'목표를 넣으면 남은 점수를 보여줍니다'}</span></div>
+    <div class="bar"><i class="${goal&&rem<=0?'done':''}" style="width:${pct}%"></i></div></div>`;
+  for(const [title,ids] of day.groups){
+    html+=`<div class="section"><h3>${title}</h3><div class="list">${ids.map(id=>rowHTML(d,id,day.hot.includes(id))).join('')}</div></div>`;
+  }
+  if(day.troops) html+=troopsHTML();
+  const panel=document.getElementById('panel'); panel.innerHTML=html;
+  document.getElementById('resetDay').textContent=`${d}일차만 지우기`;
+  bind(panel,d);
+}
+function bind(panel,d){
+  const ds=state.days[d];
+  panel.querySelector('#goal').addEventListener('input',e=>{ds.goal=Number(e.target.value||0);save();softUpdate();});
+  panel.querySelectorAll('input[data-q]').forEach(inp=>inp.addEventListener('input',e=>{ds.q[e.target.dataset.q]=Math.max(0,Number(e.target.value||0));save();softUpdate();}));
+  panel.querySelectorAll('input[data-time]').forEach(inp=>inp.addEventListener('input',e=>{
+    const id=e.target.dataset.time; const parts={};
+    panel.querySelectorAll(`input[data-time="${id}"]`).forEach(x=>parts[x.dataset.part]=Math.max(0,Number(x.value||0)));
+    ds.q[id]=parts.d*1440+parts.h*60+parts.m; save(); softUpdate();
+  }));
+  panel.querySelectorAll('button[data-step]').forEach(b=>b.addEventListener('click',()=>{
+    const id=b.dataset.step; ds.q[id]=Math.max(0,qty(d,id)+Number(b.dataset.dir)); save(); render();
+  }));
+  if(DAYS[d-1].troops){
+    panel.querySelectorAll('[data-troop]').forEach(el=>el.addEventListener(el.tagName==='SELECT'?'change':'input',e=>{
+      const t=ds.troops[Number(e.target.dataset.troop)],f=e.target.dataset.f;
+      t[f]=f==='kind'?e.target.value:Number(e.target.value||0); save(); f==='n'?softUpdate():render();
+    }));
+    panel.querySelectorAll('[data-troopdel]').forEach(b=>b.addEventListener('click',()=>{ds.troops.splice(Number(b.dataset.troopdel),1);save();render();}));
+    panel.querySelector('#addTroop').addEventListener('click',()=>{ds.troops.push({kind:'promote',from:9,to:10,n:0});save();render();});
+  }
+}
+/* update numbers without re-rendering inputs (keeps focus while typing) */
+function softUpdate(){
+  const d=state.tab,panel=document.getElementById('panel'),day=DAYS[d-1];
+  const scroll=window.scrollY, active=document.activeElement;
+  const sel=active&&active.dataset?(active.dataset.q?`input[data-q="${active.dataset.q}"]`:active.dataset.time?`input[data-time="${active.dataset.time}"][data-part="${active.dataset.part}"]`:active.dataset.troop!==undefined?`[data-troop="${active.dataset.troop}"][data-f="${active.dataset.f}"]`:active.id==='goal'?'#goal':null):null;
+  const pos=active&&active.selectionStart;
+  render();
+  if(sel){const el=panel.querySelector(sel); if(el){el.focus({preventScroll:true}); try{el.setSelectionRange(pos,pos);}catch(e){}}}
+  window.scrollTo(0,scroll);
+}
+const bonusEl=document.getElementById('bonus');
+function syncBonus(){bonusEl.value=Number(state.bonus||0);}
+bonusEl.addEventListener('input',e=>{state.bonus=Math.max(0,Number(e.target.value||0));save();render();});
+document.getElementById('bonusDown').onclick=()=>{state.bonus=Math.max(0,Number(state.bonus||0)-4);syncBonus();save();render();};
+document.getElementById('bonusUp').onclick=()=>{state.bonus=Math.min(100,Number(state.bonus||0)+4);syncBonus();save();render();};
+syncBonus();
+document.getElementById('resetDay').onclick=()=>{
+  const d=state.tab; if(!confirm(`${d}일차 입력을 모두 지울까요?`)) return;
+  state.days[d]={q:{},goal:state.days[d].goal, ...(d===4?{troops:[{kind:'promote',from:9,to:10,n:0}]}:{})}; save(); render();
+};
+document.getElementById('resetAll').onclick=()=>{
+  if(!confirm('5일치 입력을 모두 지울까요?')) return;
+  const b=state.bonus; try{localStorage.removeItem(KEY);}catch(e){} state=load(); state.bonus=b; syncBonus(); save(); render();
+};
+render();
+</script>
+</body>
+</html>
