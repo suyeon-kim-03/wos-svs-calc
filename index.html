@@ -114,6 +114,11 @@ select{text-align:left;width:auto;padding:7px 6px 7px 8px;font-family:"IBM Plex 
 .fsum b em{font-style:normal;font-size:12px;font-weight:500;color:var(--muted);margin-left:3px;font-family:"IBM Plex Sans KR",sans-serif}
 .fsum span strong{font-size:14px;font-weight:600;color:var(--ink)}
 .ftotal{display:flex;justify-content:space-between;align-items:baseline;padding:10px 14px;border-top:1px solid var(--line-soft);background:var(--surface-2);font-size:13px;font-weight:500;color:var(--muted)}
+.bsum{border-top:1px solid var(--line-soft);background:var(--surface-2);padding:12px 14px;display:flex;flex-direction:column;gap:12px}
+.bsum .fsum{margin:0}
+.bsum .fsum div{background:var(--surface);border-color:var(--line-soft)}
+.bsum .ftotal{padding:12px 2px 0;border-top:1px solid var(--line);background:none;align-items:center}
+.bsum .ftotal>span:first-child{font-size:14px;font-weight:600;color:var(--ink)}
 .ftotal .num{font-size:22px;font-weight:700;color:var(--accent-ink)}
 .ftotal .num small{font-size:12px;font-weight:500;color:var(--muted);margin-left:2px;font-family:"IBM Plex Sans KR",sans-serif}
 @media (max-width:480px){.fsum,.fsum.two{grid-template-columns:1fr}}
@@ -385,8 +390,8 @@ function furnaceHTML(d){
   const tc=buildsCost(d), fcTotal=tc.fc*fcPt, rTotal=tc.r*rPt, total=fcTotal+rTotal;
   return `<div class="section"><h3>건물 업그레이드 · 불의 수정 ${fmt1(fcPt)}점 · 제련된 불의 수정 ${fmt1(rPt)}점</h3><div class="list">${rows}
     <div class="list-foot"><span class="foot-btns"><button type="button" class="mini" data-addbuild="${d}"${ds.builds.length>=BUILD_KEYS.length?' disabled':''}>+ 건물 추가${ds.builds.length>=BUILD_KEYS.length?' (모두 추가됨)':''}</button><button type="button" class="mini clear" data-clearbuild="${d}">건물 전체 초기화</button></span></div>
-    <div class="fsum two" style="margin:0;padding:10px 14px 4px"><div><small>불의 수정 합계</small><b class="num">${fmt(tc.fc)}<em>개</em></b><span>× ${fmt1(fcPt)}점 = <strong class="num">${fmt(fcTotal)}</strong>점</span></div><div><small>제련된 불의 수정 합계</small><b class="num">${fmt(tc.r)}<em>개</em></b><span>× ${fmt1(rPt)}점 = <strong class="num">${fmt(rTotal)}</strong>점</span></div></div>
-    <div class="ftotal"><span>건물 합계</span><span class="num">${fmt(total)}<small>점</small></span></div></div>
+    <div class="bsum"><div class="fsum two"><div><small>불의 수정 합계</small><b class="num">${fmt(tc.fc)}<em>개</em></b><span>× ${fmt1(fcPt)}점 = <strong class="num">${fmt(fcTotal)}</strong>점</span></div><div><small>제련된 불의 수정 합계</small><b class="num">${fmt(tc.r)}<em>개</em></b><span>× ${fmt1(rPt)}점 = <strong class="num">${fmt(rTotal)}</strong>점</span></div></div>
+    <div class="ftotal"><span>건물 합계</span><span class="num">${fmt(total)}<small>점</small></span></div></div></div>
   <p class="hint-p">건물을 고르고 현재·목표 레벨을 고르면 불의 수정과 제련된 불의 수정 점수가 한꺼번에 계산됩니다. 셀렉트를 누르면 8불 → 10불로 시작하고, 초기화하면 "선택 안 함"(0점)이 됩니다. 올릴 건물이 여러 개면 "건물 추가"로 줄을 늘리세요. 각 정레벨은 5단계(예: 8불-1 ~ 8불-4, 9불)로 나뉩니다.</p></div>`;
 }
 function bindFurnace(panel,d){
