@@ -202,8 +202,7 @@ const CHARM_LEVELS=(()=>{
   grp(17,8,[2700,2700,2700,2700,2700,2700,2700,2700,2700]);
   return L;})();
 const CHARM_PT=70;
-const charmScore=(from,to)=>{let s=0;for(let i=from;i<to;i++) s+=CHARM_LEVELS[i].score;return s;}; // 인덱스 0=없음, k=CHARM_LEVELS[k-1]
-const freshCharm=()=>({from:4,to:5,n:0});
+const freshCharm=()=>({lv:5,n:0});
 const freshDay=d=>({q:{}, ...(d===4?{troops:[{kind:'promote',from:9,to:10,n:0}]}:{}), ...([1,3,4].includes(d)?{charms:[freshCharm()]}:{})});
 const DAYS=[
   {n:1,ko:'도시 건설',en:'City Construction',
@@ -226,7 +225,7 @@ const DAYS=[
 const KEY='wos-svs-prep-v1';
 let state=load();
 function load(){
-  try{const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s&&s.days){ if(!s.bonusDefault20){s.bonus=20;s.bonusDefault20=true;} for(const d of [1,3,4]) if(!s.days[d].charms) s.days[d].charms=[freshCharm()]; return s; }}catch(e){}
+  try{const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s&&s.days){ if(!s.bonusDefault20){s.bonus=20;s.bonusDefault20=true;} for(const d of [1,3,4]){ if(!s.days[d].charms) s.days[d].charms=[freshCharm()]; s.days[d].charms=s.days[d].charms.map(c=>c.lv?c:{lv:(c.to||5),n:c.n||0}); } return s; }}catch(e){}
   return {tab:1,bonus:20,bonusDefault20:true,days:{1:freshDay(1),2:freshDay(2),3:freshDay(3),4:freshDay(4),5:freshDay(5)}};
 }
 function save(){
@@ -248,7 +247,7 @@ function troopPts(t){
   const diff=TROOP_PTS[t.to-1]-TROOP_PTS[t.from-1];
   return diff>0?n*up(diff):0;
 }
-function charmPts(c){const n=Number(c.n||0);if(!n||c.to<=c.from) return 0;return n*charmScore(c.from,c.to)*up(CHARM_PT);}
+function charmPts(c){const n=Number(c.n||0),L=CHARM_LEVELS[(c.lv||1)-1];if(!n||!L) return 0;return n*L.score*up(CHARM_PT);}
 function dayTotal(d){
   const day=DAYS[d-1]; let s=0;
   for(const [,ids] of day.groups) for(const id of ids) s+=itemPts(d,id);
@@ -316,23 +315,22 @@ function troopsHTML(){
 }
 function charmsHTML(d){
   const list=state.days[d].charms||[];
-  const opts=(sel,zero)=>{let o=zero?`<option value="0"${sel===0?' selected':''}>없음</option>`:'';CHARM_LEVELS.forEach((L,i)=>{o+=`<option value="${i+1}"${sel===i+1?' selected':''}>Lv.${L.name}</option>`;});return o;};
+  const opts=sel=>CHARM_LEVELS.map((L,i)=>`<option value="${i+1}"${sel===i+1?' selected':''}>Lv.${L.name} · 평점 ${fmt(L.score)}</option>`).join('');
   const rows=list.map((c,i)=>{
-    const sc=c.to>c.from?charmScore(c.from,c.to):0,p=charmPts(c);
+    const L=CHARM_LEVELS[c.lv-1]||CHARM_LEVELS[0],p=charmPts(c);
     return `<div class="row${Number(c.n)?' active':''}">
       <div class="ctl">
-        <select data-charm="${i}" data-f="from">${opts(c.from,true)}</select><span class="unit">→</span>
-        <select data-charm="${i}" data-f="to">${opts(c.to,false)}</select>
-        <input type="number" min="0" max="18" inputmode="numeric" data-charm="${i}" data-f="n" value="${c.n||''}" placeholder="0" style="width:84px"><span class="unit">개</span>
+        <select data-charm="${i}" data-f="lv">${opts(c.lv)}</select>
+        <span class="unit">×</span><input type="number" min="0" inputmode="numeric" data-charm="${i}" data-f="n" value="${c.n||''}" placeholder="0" style="width:84px"><span class="unit">회</span>
         <button type="button" class="x" data-charmdel="${i}" aria-label="줄 삭제">삭제</button>
       </div>
-      <div class="got"><span class="rate">보석 1개당 평점 <span class="num">+${fmt(sc)}</span> × ${fmt1(up(CHARM_PT))}점</span> &nbsp;→&nbsp; <span class="num">${fmt(p)}</span>점</div>
+      <div class="got"><span class="rate">평점 <span class="num">${fmt(L.score)}</span> × <span class="num">${fmt1(up(CHARM_PT))}</span>점 = <span class="num">${fmt1(L.score*up(CHARM_PT))}</span>점 / 1회</span> &nbsp;→&nbsp; <span class="num">${fmt(p)}</span>점</div>
     </div>`;
   }).join('');
   const sub=list.reduce((s,c)=>s+charmPts(c),0);
   return `<div class="section troops"><h3>영주 보석 상세 계산</h3><div class="list">${rows}
     <div class="list-foot"><button type="button" class="mini" data-addcharm="${d}">+ 줄 추가</button><span class="got">보석 소계 <span class="num">${fmt(sub)}</span>점</span></div></div>
-    <p class="hint-p">현재 레벨 → 목표 레벨과 보석 개수를 넣으면 레벨업마다 얻는 평점 합계 × ${CHARM_PT}점으로 계산합니다. 레벨별 평점은 게임의 "영주 보석 평점 상세정보"와 동일합니다 (예: Lv.4 8,750 · Lv.4 1단계 2,813 · Lv.5 1단계 3,125 · Lv.11 1단계 3,400 · Lv.16 1단계 2,500 · Lv.18 2,700).</p></div>`;
+    <p class="hint-p">올릴 레벨업 단계를 고르고 횟수를 넣으면 그 단계의 평점 × ${CHARM_PT}점(발레리아 보너스 포함)으로 계산합니다. 여러 단계를 올리면 줄을 추가하세요. 레벨별 평점은 게임의 "영주 보석 평점 상세정보"와 동일합니다.</p></div>`;
 }
 function render(){
   renderTabs();
@@ -361,7 +359,7 @@ function bind(panel,d){
   if(DAYS[d-1].charm){
     panel.querySelectorAll('[data-charm]').forEach(el=>el.addEventListener(el.tagName==='SELECT'?'change':'input',e=>{
       const c=ds.charms[Number(e.target.dataset.charm)],f=e.target.dataset.f;
-      c[f]=Math.max(0,Number(e.target.value||0)); if(f==='from'&&c.to<=c.from) c.to=Math.min(CHARM_LEVELS.length,c.from+1); save(); f==='n'?softUpdate():render();
+      c[f]=Math.max(0,Number(e.target.value||0)); save(); f==='n'?softUpdate():render();
     }));
     panel.querySelectorAll('[data-charmdel]').forEach(b=>b.addEventListener('click',()=>{ds.charms.splice(Number(b.dataset.charmdel),1);save();render();}));
     panel.querySelector('[data-addcharm]').addEventListener('click',()=>{ds.charms.push(freshCharm());save();render();});
