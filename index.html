@@ -95,6 +95,9 @@ select{text-align:left;width:auto;padding-right:6px}
 .troops .kind{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.06em;margin-right:2px}
 .mini{font:inherit;font-size:13px;color:var(--accent-ink);background:none;border:1px dashed var(--accent);border-radius:8px;padding:6px 12px;cursor:pointer}
 .x{font:inherit;font-size:13px;color:var(--muted);background:none;border:0;cursor:pointer;padding:4px 6px}
+.steps{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--muted);padding:2px 0 2px 4px;border-left:2px solid var(--line-soft)}
+.step{display:flex;justify-content:space-between;gap:12px}
+.step .num{color:var(--ink)}
 .hint-p{margin:8px 2px 0;font-size:12px;color:var(--muted);line-height:1.5}
 .list-foot{padding:10px 14px;border-top:1px solid var(--line-soft);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 
@@ -202,7 +205,7 @@ const CHARM_LEVELS=(()=>{
   grp(17,8,[2700,2700,2700,2700,2700,2700,2700,2700,2700]);
   return L;})();
 const CHARM_PT=70;
-const freshCharm=()=>({lv:5,n:0});
+const freshCharm=()=>({from:4,to:5});
 const freshDay=d=>({q:{}, ...(d===4?{troops:[{kind:'promote',from:9,to:10,n:0}]}:{}), ...([1,3,4].includes(d)?{charms:[freshCharm()]}:{})});
 const DAYS=[
   {n:1,ko:'도시 건설',en:'City Construction',
@@ -225,7 +228,7 @@ const DAYS=[
 const KEY='wos-svs-prep-v1';
 let state=load();
 function load(){
-  try{const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s&&s.days){ if(!s.bonusDefault20){s.bonus=20;s.bonusDefault20=true;} for(const d of [1,3,4]){ if(!s.days[d].charms) s.days[d].charms=[freshCharm()]; s.days[d].charms=s.days[d].charms.map(c=>c.lv?c:{lv:(c.to||5),n:c.n||0}); } return s; }}catch(e){}
+  try{const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s&&s.days){ if(!s.bonusDefault20){s.bonus=20;s.bonusDefault20=true;} for(const d of [1,3,4]){ if(!s.days[d].charms) s.days[d].charms=[freshCharm()]; s.days[d].charms=s.days[d].charms.map(c=>c.from!==undefined&&c.to!==undefined?{from:c.from,to:c.to}:c.lv?{from:c.lv-1,to:c.lv}:freshCharm()); } return s; }}catch(e){}
   return {tab:1,bonus:20,bonusDefault20:true,days:{1:freshDay(1),2:freshDay(2),3:freshDay(3),4:freshDay(4),5:freshDay(5)}};
 }
 function save(){
@@ -247,7 +250,7 @@ function troopPts(t){
   const diff=TROOP_PTS[t.to-1]-TROOP_PTS[t.from-1];
   return diff>0?n*up(diff):0;
 }
-function charmPts(c){const n=Number(c.n||0),L=CHARM_LEVELS[(c.lv||1)-1];if(!n||!L) return 0;return n*L.score*up(CHARM_PT);}
+function charmPts(c){const from=Number(c.from||0),to=Number(c.to||0);if(to<=from) return 0;let s=0;for(let i=from;i<to;i++) s+=CHARM_LEVELS[i].score*up(CHARM_PT);return s;}
 function dayTotal(d){
   const day=DAYS[d-1]; let s=0;
   for(const [,ids] of day.groups) for(const id of ids) s+=itemPts(d,id);
@@ -315,22 +318,26 @@ function troopsHTML(){
 }
 function charmsHTML(d){
   const list=state.days[d].charms||[];
-  const opts=sel=>CHARM_LEVELS.map((L,i)=>`<option value="${i+1}"${sel===i+1?' selected':''}>Lv.${L.name} · 평점 ${fmt(L.score)}</option>`).join('');
+  const pt=up(CHARM_PT);
+  const opts=(sel,zero)=>{let o=zero?`<option value="0"${sel===0?' selected':''}>없음 (Lv.0)</option>`:'';CHARM_LEVELS.forEach((L,i)=>{o+=`<option value="${i+1}"${sel===i+1?' selected':''}>Lv.${L.name}</option>`;});return o;};
   const rows=list.map((c,i)=>{
-    const L=CHARM_LEVELS[c.lv-1]||CHARM_LEVELS[0],p=charmPts(c);
-    return `<div class="row${Number(c.n)?' active':''}">
+    const steps=c.to>c.from?CHARM_LEVELS.slice(c.from,c.to):[];
+    const p=charmPts(c);
+    const lines=steps.map(L=>`<div class="step"><span>Lv.${L.name}</span><span class="num">${fmt(L.score)} × ${fmt1(pt)} = ${fmt1(L.score*pt)}점</span></div>`).join('');
+    return `<div class="row${p?' active':''}">
       <div class="ctl">
-        <select data-charm="${i}" data-f="lv">${opts(c.lv)}</select>
-        <span class="unit">×</span><input type="number" min="0" inputmode="numeric" data-charm="${i}" data-f="n" value="${c.n||''}" placeholder="0" style="width:84px"><span class="unit">회</span>
+        <span class="unit">현재</span><select data-charm="${i}" data-f="from">${opts(c.from,true)}</select>
+        <span class="unit">→ 목표</span><select data-charm="${i}" data-f="to">${opts(c.to,false)}</select>
         <button type="button" class="x" data-charmdel="${i}" aria-label="줄 삭제">삭제</button>
       </div>
-      <div class="got"><span class="rate">평점 <span class="num">${fmt(L.score)}</span> × <span class="num">${fmt1(up(CHARM_PT))}</span>점 = <span class="num">${fmt1(L.score*up(CHARM_PT))}</span>점 / 1회</span> &nbsp;→&nbsp; <span class="num">${fmt(p)}</span>점</div>
+      ${lines?`<div class="steps">${lines}</div>`:'<div class="got">목표를 현재보다 높은 단계로 고르세요</div>'}
+      <div class="got">${steps.length}단계 합계 &nbsp;→&nbsp; <span class="num">${fmt(p)}</span>점</div>
     </div>`;
   }).join('');
   const sub=list.reduce((s,c)=>s+charmPts(c),0);
-  return `<div class="section troops"><h3>영주 보석 최고 평점 1포인트 증가 · ${fmt1(up(CHARM_PT))}점</h3><div class="list">${rows}
-    <div class="list-foot"><button type="button" class="mini" data-addcharm="${d}">+ 줄 추가</button><span class="got">보석 소계 <span class="num">${fmt(sub)}</span>점</span></div></div>
-    <p class="hint-p">증가 포인트 = 올린 단계의 평점 × ${fmt1(up(CHARM_PT))}점. 올릴 레벨업 단계를 고르고 횟수를 넣으세요. 여러 단계를 올리면 줄을 추가하세요. 단계별 평점은 게임의 "영주 보석 평점 상세정보"와 동일합니다.</p></div>`;
+  return `<div class="section troops"><h3>영주 보석 최고 평점 1포인트 증가 · ${fmt1(pt)}점</h3><div class="list">${rows}
+    <div class="list-foot"><button type="button" class="mini" data-addcharm="${d}">+ 보석 추가</button><span class="got">보석 소계 <span class="num">${fmt(sub)}</span>점</span></div></div>
+    <p class="hint-p">보석 하나의 현재 단계와 목표 단계를 고르면, 거치는 단계마다 "그 단계 평점 × ${fmt1(pt)}점"을 계산해 더합니다. 보석이 여러 개면 "보석 추가"로 줄을 늘리세요. 단계별 평점은 게임의 "영주 보석 평점 상세정보"와 동일합니다.</p></div>`;
 }
 function render(){
   renderTabs();
@@ -359,7 +366,7 @@ function bind(panel,d){
   if(DAYS[d-1].charm){
     panel.querySelectorAll('[data-charm]').forEach(el=>el.addEventListener(el.tagName==='SELECT'?'change':'input',e=>{
       const c=ds.charms[Number(e.target.dataset.charm)],f=e.target.dataset.f;
-      c[f]=Math.max(0,Number(e.target.value||0)); save(); f==='n'?softUpdate():render();
+      c[f]=Math.max(0,Number(e.target.value||0)); if(f==='from'&&c.to<=c.from) c.to=Math.min(CHARM_LEVELS.length,c.from+1); save(); render();
     }));
     panel.querySelectorAll('[data-charmdel]').forEach(b=>b.addEventListener('click',()=>{ds.charms.splice(Number(b.dataset.charmdel),1);save();render();}));
     panel.querySelector('[data-addcharm]').addEventListener('click',()=>{ds.charms.push(freshCharm());save();render();});
