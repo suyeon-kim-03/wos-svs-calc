@@ -298,7 +298,8 @@ const ROMAN={I:1,II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8};
 const rsTier=name=>{const m=/\s([IVX]+)$/.exec(name);return m?(ROMAN[m[1]]||0):0;};
 // 트리별로 표시할 최소 티어(사용자 설정: 발전 VII, 경제 III, 전투 VI 이상)
 const RS_MIN_ITEM={'Food Gathering':4,'Wood Gathering':4}; // 항목별 최소 티어(사용자 설정)
-const rsVisible=(tree,k)=>{const it=RESEARCH[tree].items[k];if(!it) return false;const base=it[0].replace(/\s[IVX]+$/,'');const min=RS_MIN_ITEM[base]||RESEARCH[tree].minTier||0;return rsTier(it[0])>=min;};
+const RS_HIDE=new Set(['Weapons Prep','Reprisal Tactics','Precision Targeting','Skirmishing']); // 전투: 방어 라인업 이전 항목 숨김(사용자 설정)
+const rsVisible=(tree,k)=>{const it=RESEARCH[tree].items[k];if(!it) return false;const base=it[0].replace(/\s[IVX]+$/,'');if(RS_HIDE.has(base)) return false;const min=RS_MIN_ITEM[base]||RESEARCH[tree].minTier||0;return rsTier(it[0])>=min;};
 const freshRs=()=>({tree:'Growth',item:-1,from:0,to:0});
 const rsItem=r=>(RESEARCH[r.tree]&&RESEARCH[r.tree].items[r.item])||null;
 const rsOn=r=>!!rsItem(r)&&r.to>r.from;
