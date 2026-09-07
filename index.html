@@ -382,7 +382,7 @@ function furnaceHTML(d){
   }).join('');
   const tc=buildsCost(d), fcTotal=tc.fc*fcPt, rTotal=tc.r*rPt, total=fcTotal+rTotal;
   return `<div class="section"><h3>건물 업그레이드 · 불의 수정 ${fmt1(fcPt)}점 · 제련된 불의 수정 ${fmt1(rPt)}점</h3><div class="list">${rows}
-    <div class="list-foot"><span class="foot-btns"><button type="button" class="mini" data-addbuild="${d}">+ 건물 추가</button><button type="button" class="mini clear" data-clearbuild="${d}">건물 전체 삭제</button></span></div>
+    <div class="list-foot"><span class="foot-btns"><button type="button" class="mini" data-addbuild="${d}">+ 건물 추가</button><button type="button" class="mini clear" data-clearbuild="${d}">건물 전체 초기화</button></span></div>
     <div class="fsum two" style="margin:0;padding:10px 14px 4px"><div><small>불의 수정 합계</small><b class="num">${fmt(tc.fc)}<em>개</em></b><span>× ${fmt1(fcPt)}점 = <strong class="num">${fmt(fcTotal)}</strong>점</span></div><div><small>제련된 불의 수정 합계</small><b class="num">${fmt(tc.r)}<em>개</em></b><span>× ${fmt1(rPt)}점 = <strong class="num">${fmt(rTotal)}</strong>점</span></div></div>
     <div class="ftotal"><span>건물 합계</span><span class="num">${fmt(total)}<small>점</small></span></div></div>
   <p class="hint-p">건물을 고르고 현재·목표 레벨을 고르면 불의 수정과 제련된 불의 수정 점수가 한꺼번에 계산됩니다. 셀렉트를 누르면 8불 → 10불로 시작하고, 초기화하면 "선택 안 함"(0점)이 됩니다. 올릴 건물이 여러 개면 "건물 추가"로 줄을 늘리세요. 각 정레벨은 5단계(예: 8불-1 ~ 8불-4, 9불)로 나뉩니다.</p></div>`;
@@ -405,7 +405,7 @@ function bindFurnace(panel,d){
   });
   panel.querySelectorAll('[data-builddel]').forEach(x=>x.addEventListener('click',()=>{const i=Number(x.dataset.builddel); if(i===0) ds.builds[0]={b:ds.builds[0].b,from:0,to:0}; else ds.builds.splice(i,1); save(); render();}));
   const add=panel.querySelector('[data-addbuild]'); if(add) add.addEventListener('click',()=>{ds.builds.push(freshBuild());save();render();});
-  const clr=panel.querySelector('[data-clearbuild]'); if(clr) clr.addEventListener('click',()=>{if(!confirm('이 날짜의 건물 줄을 모두 지울까요?')) return; ds.builds=[freshBuild()]; save(); render();});
+  const clr=panel.querySelector('[data-clearbuild]'); if(clr) clr.addEventListener('click',()=>{if(!confirm('이 날짜의 건물 줄을 모두 초기화할까요? (첫 줄은 남고 나머지는 삭제됩니다)')) return; ds.builds=[{b:(ds.builds[0]&&ds.builds[0].b)||'furnace',from:0,to:0}]; save(); render();});
 }
 function render(){
   renderTabs();
