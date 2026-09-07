@@ -93,6 +93,8 @@ select{text-align:left;width:auto;padding-right:6px}
 .troops .row .ctl{grid-column:1;grid-row:auto;justify-content:flex-start;flex-wrap:wrap}
 .troops .row .got{grid-column:1}
 .troops .kind{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.06em;margin-right:2px}
+.foot-btns{display:flex;gap:8px;flex-wrap:wrap}
+.mini.clear{color:var(--muted);border-color:var(--line)}
 .mini{font:inherit;font-size:13px;color:var(--accent-ink);background:none;border:1px dashed var(--accent);border-radius:8px;padding:6px 12px;cursor:pointer}
 .x{font:inherit;font-size:13px;font-weight:500;color:var(--accent-ink);background:var(--surface);border:1px solid var(--accent);border-radius:8px;cursor:pointer;padding:6px 10px;line-height:1.2;white-space:nowrap;flex:0 0 auto;margin-left:auto}
 .x:active{background:var(--accent-soft)}
@@ -329,7 +331,7 @@ function charmsHTML(d){
   }).join('');
   const sub=list.reduce((s,c)=>s+charmPts(c),0);
   return `<div class="section troops"><h3>영주 보석 최고 평점 1포인트 증가 · ${fmt1(pt)}점</h3><div class="list">${rows}
-    <div class="list-foot"><button type="button" class="mini" data-addcharm="${d}">+ 보석 추가</button><span class="got">보석 소계 <span class="num">${fmt(sub)}</span>점</span></div></div>
+    <div class="list-foot"><span class="foot-btns"><button type="button" class="mini" data-addcharm="${d}">+ 보석 추가</button><button type="button" class="mini clear" data-clearcharm="${d}">보석 전체 삭제</button></span><span class="got">보석 소계 <span class="num">${fmt(sub)}</span>점</span></div></div>
     <p class="hint-p">올릴 목표 단계를 고르면 "그 단계 평점 × ${fmt1(pt)}점"으로 계산합니다. 보석을 여러 개 올리거나 여러 단계를 올리면 "보석 추가"로 줄을 늘리세요. 단계별 평점은 게임의 "영주 보석 평점 상세정보"와 동일합니다.</p></div>`;
 }
 function render(){
@@ -363,6 +365,7 @@ function bind(panel,d){
     }));
     panel.querySelectorAll('[data-charmdel]').forEach(b=>b.addEventListener('click',()=>{ds.charms.splice(Number(b.dataset.charmdel),1);save();render();}));
     panel.querySelector('[data-addcharm]').addEventListener('click',()=>{ds.charms.push(freshCharm());save();render();});
+    panel.querySelector('[data-clearcharm]').addEventListener('click',()=>{if(!confirm('이 날짜의 보석 줄을 모두 지울까요?')) return; ds.charms=[freshCharm()];save();render();});
   }
   if(DAYS[d-1].troops){
     panel.querySelectorAll('[data-troop]').forEach(el=>el.addEventListener(el.tagName==='SELECT'?'change':'input',e=>{
