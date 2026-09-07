@@ -140,7 +140,7 @@ select{text-align:left;width:auto;padding-right:6px}
     <p><b>발레리아 보너스</b> · 게임은 모든 항목에 발레리아 도움 보너스를 곱해서 보여줍니다. 보너스는 2%씩 올라 최대 20%입니다. 위에서 본인 보너스를 맞추면 게임과 같은 숫자가 나옵니다.</p>
     <p><b>가속</b> · 일·시간·분을 넣으면 분 단위로 환산해 1분당 30점으로 계산합니다.</p>
     <p><b>병력 승급</b> · 승급 점수는 목표 등급 점수에서 원래 등급 점수를 뺀 값입니다. 훈련은 4일차에 <em>완료</em>되어야 점수가 붙습니다.</p>
-    <p><b>영주 보석</b> · 게임의 "영주 보석 최고 평점 1포인트 증가 = 70점"을 레벨별 평점 증가량으로 풀어 계산합니다. 레벨별 평점은 해외 계산기(wostools.net) 데이터이며, 게임 보석 화면의 평점 증가량과 다르면 알려주세요.</p>
+    <p><b>영주 보석</b> · 게임의 "영주 보석 최고 평점 1포인트 증가 = 70점"을 레벨별 평점으로 풀어 계산합니다. 레벨별 평점은 게임 안 "영주 보석 평점 상세정보"(Lv.1~18, 하위 단계 포함)와 대조해 확인했습니다.</p>
     <p><b>채집</b> · 채집량 자체를 입력하면 고기·나무 1,000당, 석탄 200당, 철 50당 2점으로 계산합니다.</p>
     <p>입력값은 이 브라우저에 자동 저장됩니다.</p>
   </section>
@@ -181,11 +181,26 @@ const ITEMS = {
   mithril:{ko:'미스릴',en:'Mithril',pts:144000,unit:'개'},
 };
 const TROOP_PTS=[3,4,5,8,12,18,25,35,45,60,75]; // T1..T11
-// 영주 보석: 정레벨별 평점 증가량(1~18). 4레벨 이후는 하위 단계(4.1, 4.2 …)로 나뉘어 평점이 균등 분배됨. 출처 wostools.net 영주 보석 계산기 데이터
-const CHARM_FULL=[625,1250,3125,8750,11250,12500,12500,13000,14000,15000,16000,17000,18000,19000,20000,21000,22500,24300];
-const CHARM_LEVELS=(()=>{const out=[];const split=(u,h)=>{const t=Math.floor(u/h),r=u-t*h;return Array.from({length:h},(_,a)=>t+(a<r?1:0));};
-  for(let m=1;m<=18;m++){const h=m<=4?1:m<=11?4:m<=16?5:9;const parts=split(CHARM_FULL[m-1],h);for(let t=0;t<h;t++) out.push({name:t===h-1?`${m}`:`${m-1}.${t+1}`,score:parts[t]});}
-  return out;})();
+// 영주 보석 평점 상세정보 — 2026-09-07 게임 화면(스크린샷 11장)과 1:1 대조 완료. 표기는 게임과 동일: Lv.4 (1단계) = Lv.4에서 Lv.5로 가는 1번째 단계
+const CHARM_LEVELS=(()=>{
+  const L=[]; const add=(name,score)=>L.push({name,score});
+  add('1',625); add('2',1250); add('3',3125); add('4',8750);
+  const grp=(lv,steps,arr)=>{for(let i=0;i<steps;i++) add(`${lv} (${i+1}단계)`,arr[i]); add(`${lv+1}`,arr[steps]);};
+  grp(4,3,[2813,2812,2813,2812]);
+  grp(5,3,[3125,3125,3125,3125]);
+  grp(6,3,[3125,3125,3125,3125]);
+  grp(7,3,[3250,3250,3250,3250]);
+  grp(8,3,[3500,3500,3500,3500]);
+  grp(9,3,[3750,3750,3750,3750]);
+  grp(10,3,[4000,4000,4000,4000]);
+  grp(11,4,[3400,3400,3400,3400,3400]);
+  grp(12,4,[3600,3600,3600,3600,3600]);
+  grp(13,4,[3800,3800,3800,3800,3800]);
+  grp(14,4,[4000,4000,4000,4000,4000]);
+  grp(15,4,[4200,4200,4200,4200,4200]);
+  grp(16,8,[2500,2500,2500,2500,2500,2500,2500,2500,2500]);
+  grp(17,8,[2700,2700,2700,2700,2700,2700,2700,2700,2700]);
+  return L;})();
 const CHARM_PT=70;
 const charmScore=(from,to)=>{let s=0;for(let i=from;i<to;i++) s+=CHARM_LEVELS[i].score;return s;}; // 인덱스 0=없음, k=CHARM_LEVELS[k-1]
 const freshCharm=()=>({from:4,to:5,n:0});
@@ -317,7 +332,7 @@ function charmsHTML(d){
   const sub=list.reduce((s,c)=>s+charmPts(c),0);
   return `<div class="section troops"><h3>영주 보석 상세 계산</h3><div class="list">${rows}
     <div class="list-foot"><button type="button" class="mini" data-addcharm="${d}">+ 줄 추가</button><span class="got">보석 소계 <span class="num">${fmt(sub)}</span>점</span></div></div>
-    <p class="hint-p">현재 레벨 → 목표 레벨과 보석 개수를 넣으면 평점 증가량 × ${CHARM_PT}점으로 계산합니다. 정레벨 평점: Lv.1 625 · Lv.2 1,250 · Lv.3 3,125 · Lv.4 8,750 · Lv.5 11,250 · Lv.6~7 12,500 · Lv.8 13,000 · Lv.9 14,000 · Lv.10 15,000 · Lv.11 16,000 · Lv.12 17,000 … Lv.16 21,000 · Lv.17 22,500 · Lv.18 24,300 (하위 단계는 균등 분할).</p></div>`;
+    <p class="hint-p">현재 레벨 → 목표 레벨과 보석 개수를 넣으면 레벨업마다 얻는 평점 합계 × ${CHARM_PT}점으로 계산합니다. 레벨별 평점은 게임의 "영주 보석 평점 상세정보"와 동일합니다 (예: Lv.4 8,750 · Lv.4 1단계 2,813 · Lv.5 1단계 3,125 · Lv.11 1단계 3,400 · Lv.16 1단계 2,500 · Lv.18 2,700).</p></div>`;
 }
 function render(){
   renderTabs();
