@@ -136,8 +136,13 @@ select{text-align:left;width:auto;padding:7px 6px 7px 8px;font-family:"IBM Plex 
 .speed-grid label.chk input{width:18px;height:18px;accent-color:var(--accent);margin:0}
 .speed-grid label.chk b{color:var(--accent-ink);font-weight:600}
 .speed-grid{grid-template-columns:minmax(0,1fr) auto auto;align-items:end}
-.speed-grid .speed-reset{margin-left:0;align-self:end;padding:9px 10px}
-@media (max-width:560px){.speed-grid{grid-template-columns:1fr 1fr}.speed-grid label:first-child{grid-column:1/-1}}
+.speed-btns{display:flex;gap:6px;align-self:end}
+.speed-grid .speed-reset{margin-left:0;padding:9px 10px}
+.apply{font:inherit;font-size:13px;font-weight:600;color:#fff;background:var(--accent);border:1px solid var(--accent);border-radius:8px;padding:9px 14px;cursor:pointer;white-space:nowrap}
+.apply:disabled{background:var(--surface-2);color:var(--muted);border-color:var(--line);cursor:default}
+.row.dirty{background:var(--accent-soft)}
+.dirty-note{margin-top:6px;color:var(--accent-ink);font-weight:500}
+@media (max-width:560px){.speed-grid{grid-template-columns:1fr 1fr}.speed-grid label:first-child{grid-column:1/-1}.speed-btns{grid-column:1/-1;justify-content:flex-end}}
 .speed-res{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .speed-res div{display:flex;flex-direction:column;gap:2px;background:var(--surface-2);border-radius:8px;padding:8px 10px}
 .speed-res small{font-size:11px;color:var(--muted)}
@@ -267,10 +272,14 @@ const buildOn=b=>b&&BUILDINGS[b.b]&&b.from>0&&b.to>b.from;
 function buildsCost(d){let fc=0,r=0,t=0;for(const b of (state.days[d].builds||[])){if(buildOn(b)){const c=buildCost(b.b,b.from,b.to);fc+=c.fc;r+=c.r;t+=c.t;}}return {fc,r,t};}
 const SPEED_KEYS=[['research','건설 속도 합계 (게임 버프 화면 값)']];
 const MINISTER_PCT=10; // 집행관 버프는 +10% 고정
-const speedTotal=()=>Number((state.speed||{}).research||0)+((state.speed||{}).minister?MINISTER_PCT:0);
+const speedDraft=()=>Number((state.speed||{}).research||0)+((state.speed||{}).minister?MINISTER_PCT:0);
+// 점수 계산에는 '적용' 버튼으로 확정한 값만 사용
+const speedApplied=()=>{const a=(state.speed||{}).applied;return a?Number(a.research||0)+(a.minister?MINISTER_PCT:0):null;};
+const speedTotal=()=>speedApplied()||0;
+const speedDirty=()=>{const a=(state.speed||{}).applied;return !a||Number(a.research||0)!==Number(state.speed.research||0)||!!a.minister!==!!state.speed.minister;};
 const fmtDur=sec=>{sec=Math.max(0,Math.round(sec));const d=Math.floor(sec/86400),h=Math.floor(sec%86400/3600),m=Math.floor(sec%3600/60);return (d?d+'일 ':'')+(h?h+'시간 ':'')+m+'분';};
 function furnacePts(d){const c=buildsCost(d);return c.fc*up(ITEMS.fireCrystal.pts)+c.r*up(ITEMS.refinedFC.pts);}
-const speedMins=d=>{const tc=buildsCost(d);return tc.t?Math.ceil(tc.t/(1+speedTotal()/100)/60):0;};
+const speedMins=d=>{const tc=buildsCost(d);return tc.t&&speedApplied()!==null?Math.ceil(tc.t/(1+speedTotal()/100)/60):0;};
 function speedPts(d){return speedMins(d)*up(ITEMS.spConstruction.pts);}
 const CHARM_DEFAULT=CHARM_LEVELS.findIndex(L=>L.name==='12')+1; // 기본 선택 Lv.12
 const freshCharm=()=>({to:CHARM_DEFAULT});
@@ -292,8 +301,8 @@ const DAYS=[
 const KEY='wos-svs-prep-v1';
 let state=load();
 function load(){
-  try{const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s&&s.days){ if(s.tab===6) s.tab=1; if(!s.speed) s.speed={research:0,minister:false}; else if(typeof s.speed.minister!=='boolean'){ s.speed={research:Number(s.speed.research||0)+Number(s.speed.island||0)+Number(s.speed.vip||0)+Number(s.speed.minister||0)+Number(s.speed.other||0),minister:false}; } if(!s.bonusDefault20){s.bonus=20;s.bonusDefault20=true;} for(const d of [1,2,5]){ if(!s.days[d].builds){ const f=s.days[d].furnace; s.days[d].builds=[f&&f.from?{b:'furnace',from:f.from,to:f.to}:freshBuild()]; } } for(const d of [1,3,4]){ if(!s.days[d].charms) s.days[d].charms=[freshCharm()]; s.days[d].charms=s.days[d].charms.map(c=>({to:Number(c.to||c.lv||0)})); } return s; }}catch(e){}
-  return {tab:1,bonus:20,bonusDefault20:true,speed:{research:0,minister:false},days:{1:freshDay(1),2:freshDay(2),3:freshDay(3),4:freshDay(4),5:freshDay(5)}};
+  try{const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s&&s.days){ if(s.tab===6) s.tab=1; if(!s.speed) s.speed={research:0,minister:false,applied:null}; else if(typeof s.speed.minister!=='boolean'){ s.speed={research:Number(s.speed.research||0)+Number(s.speed.island||0)+Number(s.speed.vip||0)+Number(s.speed.minister||0)+Number(s.speed.other||0),minister:false,applied:null}; } if(s.speed.applied===undefined) s.speed.applied=null; if(!s.bonusDefault20){s.bonus=20;s.bonusDefault20=true;} for(const d of [1,2,5]){ if(!s.days[d].builds){ const f=s.days[d].furnace; s.days[d].builds=[f&&f.from?{b:'furnace',from:f.from,to:f.to}:freshBuild()]; } } for(const d of [1,3,4]){ if(!s.days[d].charms) s.days[d].charms=[freshCharm()]; s.days[d].charms=s.days[d].charms.map(c=>({to:Number(c.to||c.lv||0)})); } return s; }}catch(e){}
+  return {tab:1,bonus:20,bonusDefault20:true,speed:{research:0,minister:false,applied:null},days:{1:freshDay(1),2:freshDay(2),3:freshDay(3),4:freshDay(4),5:freshDay(5)}};
 }
 function save(){
   try{localStorage.setItem(KEY,JSON.stringify(state));document.getElementById('saved').textContent='자동 저장됨 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});}catch(e){}
@@ -424,13 +433,15 @@ function furnaceHTML(d){
   <p class="hint-p">건물을 고르고 현재·목표 레벨을 고르면 불의 수정과 제련된 불의 수정 점수가 한꺼번에 계산됩니다. 셀렉트를 누르면 8불 → 10불로 시작하고, 초기화하면 "선택 안 함"(0점)이 됩니다. 올릴 건물이 여러 개면 "건물 추가"로 줄을 늘리세요. 각 정레벨은 5단계(예: 8불-1 ~ 8불-4, 9불)로 나뉩니다.</p></div>`;
 }
 function speedHTML(d){
-  const tc=buildsCost(d), pct=speedTotal(), real=tc.t/(1+pct/100), mins=speedMins(d), spPt=up(ITEMS.spConstruction.pts), pts=speedPts(d);
-  return `<div class="section"><h3>건설 속도 버프 · 합계 +${fmt1(pct)}% · 건설 가속 1분 ${fmt1(spPt)}점</h3><div class="list">
-    <div class="row troops-like"><div class="speed-grid">${SPEED_KEYS.map(([k,label])=>`<label><span>${label}</span><span class="pct"><input type="text" class="n" inputmode="decimal" data-speed="${k}" value="${(state.speed[k]||'')}" placeholder="0"><em>%</em></span></label>`).join('')}<label class="chk"><input type="checkbox" id="ministerChk"${state.speed.minister?' checked':''}><span>집행관 버프 <b>+${MINISTER_PCT}%</b></span></label><button type="button" class="x speed-reset" id="speedReset" aria-label="건설 속도 버프 초기화">↺ 초기화</button></div></div>
-    ${tc.t?`<div class="bsum"><div class="speed-res"><div><small>기본 건설 시간</small><b>${fmtDur(tc.t)}</b></div><div><small>버프 적용 후</small><b>${fmtDur(real)}</b></div><div><small>필요 건설 가속</small><b>${fmt(mins)}분</b></div></div>
-    <div class="ftotal"><span>건설 가속 점수 <small style="font-weight:400;color:var(--muted)">${fmt(mins)}분 × ${fmt1(spPt)}점</small></span><span class="num">${fmt(pts)}<small>점</small></span></div></div>`:`<div class="list-foot"><span class="got">위에서 건물을 고르면 이 날짜의 건설 시간과 필요한 가속, 건설 가속 점수를 계산합니다</span></div>`}
+  const tc=buildsCost(d), applied=speedApplied(), pct=speedTotal(), dirty=speedDirty(), real=tc.t/(1+pct/100), mins=speedMins(d), spPt=up(ITEMS.spConstruction.pts), pts=speedPts(d);
+  const title=applied===null?'미적용':`적용됨 +${fmt1(pct)}%`;
+  return `<div class="section"><h3>건설 속도 버프 · ${title} · 건설 가속 1분 ${fmt1(spPt)}점</h3><div class="list">
+    <div class="row troops-like${dirty?' dirty':''}"><div class="speed-grid">${SPEED_KEYS.map(([k,label])=>`<label><span>${label}</span><span class="pct"><input type="text" class="n" inputmode="decimal" data-speed="${k}" value="${(state.speed[k]||'')}" placeholder="0"><em>%</em></span></label>`).join('')}<label class="chk"><input type="checkbox" id="ministerChk"${state.speed.minister?' checked':''}><span>집행관 버프 <b>+${MINISTER_PCT}%</b></span></label><span class="speed-btns"><button type="button" class="apply" id="speedApply"${dirty?'':' disabled'}>${dirty?'적용':'✓ 적용됨'}</button><button type="button" class="x speed-reset" id="speedReset" aria-label="건설 속도 버프 초기화">↺ 초기화</button></span></div>
+    ${dirty?`<div class="got dirty-note">입력 합계 +${fmt1(speedDraft())}% · "적용"을 누르면 점수에 반영됩니다</div>`:''}</div>
+    ${tc.t&&applied!==null?`<div class="bsum"><div class="speed-res"><div><small>기본 건설 시간</small><b>${fmtDur(tc.t)}</b></div><div><small>버프 적용 후</small><b>${fmtDur(real)}</b></div><div><small>필요 건설 가속</small><b>${fmt(mins)}분</b></div></div>
+    <div class="ftotal"><span>건설 가속 점수 <small style="font-weight:400;color:var(--muted)">${fmt(mins)}분 × ${fmt1(spPt)}점</small></span><span class="num">${fmt(pts)}<small>점</small></span></div></div>`:`<div class="list-foot"><span class="got">${tc.t?'버프를 넣고 "적용"을 누르면 건설 시간과 필요한 가속, 건설 가속 점수를 계산합니다':'위에서 건물을 고르고 버프를 적용하면 이 날짜의 건설 가속 점수를 계산합니다'}</span></div>`}
   </div>
-  <p class="hint-p">게임 영주 정보의 버프 화면에 나오는 "건설 속도 +N%"(섬·VIP 포함)를 넣으면 실제 소요 시간 = 기본 시간 ÷ (1 + N%)로 계산하고, 그 시간을 전부 건설 가속으로 채운다고 보고 1분당 점수를 곱합니다. 버프 값은 모든 일차에 공통으로 적용됩니다.</p></div>`;
+  <p class="hint-p">게임 영주 정보의 버프 화면에 나오는 "건설 속도 +N%"(섬·VIP 포함)를 넣고 "적용"을 누르면 실제 소요 시간 = 기본 시간 ÷ (1 + N%)로 계산하고, 그 시간을 전부 건설 가속으로 채운다고 보고 1분당 점수를 곱합니다. 버프 값은 모든 일차에 공통으로 적용됩니다.</p></div>`;
 }
 function bindFurnace(panel,d){
   const ds=state.days[d];
@@ -451,7 +462,8 @@ function bindFurnace(panel,d){
   panel.querySelectorAll('[data-builddel]').forEach(x=>x.addEventListener('click',()=>{const i=Number(x.dataset.builddel); if(i===0) ds.builds[0]={b:ds.builds[0].b,from:0,to:0}; else ds.builds.splice(i,1); save(); render();}));
   panel.querySelectorAll('input[data-speed]').forEach(el=>el.addEventListener('input',e=>{state.speed[e.target.dataset.speed]=num(e.target.value); save(); softUpdate();}));
   const mc=panel.querySelector('#ministerChk'); if(mc) mc.addEventListener('change',e=>{state.speed.minister=!!e.target.checked; save(); render();});
-  const sr=panel.querySelector('#speedReset'); if(sr) sr.addEventListener('click',()=>{state.speed={research:0,minister:false}; save(); render();});
+  const sa=panel.querySelector('#speedApply'); if(sa) sa.addEventListener('click',()=>{state.speed.applied={research:Number(state.speed.research||0),minister:!!state.speed.minister}; save(); render();});
+  const sr=panel.querySelector('#speedReset'); if(sr) sr.addEventListener('click',()=>{state.speed={research:0,minister:false,applied:null}; save(); render();});
   const add=panel.querySelector('[data-addbuild]'); if(add) add.addEventListener('click',()=>{const used=new Set(ds.builds.map(o=>o.b)); const next=BUILD_KEYS.find(k=>!used.has(k)); if(!next) return; ds.builds.push({b:next,from:0,to:0});save();render();});
   const clr=panel.querySelector('[data-clearbuild]'); if(clr) clr.addEventListener('click',()=>{ if(!confirm('이 날짜의 건물 줄을 모두 초기화할까요? (첫 줄은 남고 나머지는 삭제됩니다)')) return; ds.builds=[{b:(ds.builds[0]&&ds.builds[0].b)||'furnace',from:0,to:0}]; save(); render(); });
 }
