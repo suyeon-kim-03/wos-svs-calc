@@ -279,7 +279,7 @@ const speedTotal=()=>speedApplied()||0;
 const speedDirty=()=>{const a=(state.speed||{}).applied;return !a||Number(a.research||0)!==Number(state.speed.research||0)||!!a.minister!==!!state.speed.minister;};
 const fmtDur=sec=>{sec=Math.max(0,Math.round(sec));const d=Math.floor(sec/86400),h=Math.floor(sec%86400/3600),m=Math.floor(sec%3600/60);return (d?d+'일 ':'')+(h?h+'시간 ':'')+m+'분';};
 function furnacePts(d){const c=buildsCost(d);return c.fc*up(ITEMS.fireCrystal.pts)+c.r*up(ITEMS.refinedFC.pts);}
-const speedMins=d=>{const tc=buildsCost(d);return tc.t&&speedApplied()!==null?Math.ceil(tc.t/(1+speedTotal()/100)/60):0;};
+const speedMins=d=>{const tc=buildsCost(d);return tc.t&&speedApplied()!==null?tc.t/(1+speedTotal()/100)/60:0;}; // 올림 없이 소수점 그대로
 function speedPts(d){return speedMins(d)*up(ITEMS.spConstruction.pts);}
 const CHARM_DEFAULT=CHARM_LEVELS.findIndex(L=>L.name==='12')+1; // 기본 선택 Lv.12
 const freshCharm=()=>({to:CHARM_DEFAULT});
@@ -438,8 +438,8 @@ function speedHTML(d){
   return `<div class="section"><h3>건설 가속 아이템 · ${title} · 1분 ${fmt1(spPt)}점</h3><div class="list">
     <div class="row troops-like${dirty?' dirty':''}"><div class="speed-grid">${SPEED_KEYS.map(([k,label])=>`<label><span>${label}</span><span class="pct"><input type="text" class="n" inputmode="decimal" data-speed="${k}" value="${(state.speed[k]||'')}" placeholder="0"><em>%</em></span></label>`).join('')}<label class="chk"><input type="checkbox" id="ministerChk"${state.speed.minister?' checked':''}><span>집행관 버프 <b>+${MINISTER_PCT}%</b></span></label><span class="speed-btns"><button type="button" class="apply" id="speedApply"${dirty?'':' disabled'}>${dirty?'적용':'✓ 적용됨'}</button><button type="button" class="x speed-reset" id="speedReset" aria-label="건설 가속 점수 초기화">↺ 초기화</button></span></div>
     ${dirty?`<div class="got dirty-note">입력 합계 +${fmt1(speedDraft())}% · "적용"을 누르면 점수에 반영됩니다</div>`:''}</div>
-    ${tc.t&&applied!==null?`<div class="bsum"><div class="speed-res"><div><small>기본 건설 시간</small><b>${fmtDur(tc.t)}</b></div><div><small>버프 적용 후</small><b>${fmtDur(real)}</b></div><div><small>필요 건설 가속</small><b>${fmt(mins)}분</b></div></div>
-    <div class="ftotal"><span>건설 가속 점수 <small style="font-weight:400;color:var(--muted)">${fmt(mins)}분 × ${fmt1(spPt)}점</small></span><span class="num">${fmt(pts)}<small>점</small></span></div></div>`:`<div class="list-foot"><span class="got">${tc.t?'버프를 넣고 "적용"을 누르면 건설 시간과 필요한 가속, 건설 가속 점수를 계산합니다':'위에서 건물을 고르고 버프를 적용하면 이 날짜의 건설 가속 점수를 계산합니다'}</span></div>`}
+    ${tc.t&&applied!==null?`<div class="bsum"><div class="speed-res"><div><small>기본 건설 시간</small><b>${fmtDur(tc.t)}</b></div><div><small>버프 적용 후</small><b>${fmtDur(real)}</b></div><div><small>필요 건설 가속</small><b>${fmt1(mins)}분</b></div></div>
+    <div class="ftotal"><span>건설 가속 점수 <small style="font-weight:400;color:var(--muted)">${fmt1(mins)}분 × ${fmt1(spPt)}점</small></span><span class="num">${fmt(pts)}<small>점</small></span></div></div>`:`<div class="list-foot"><span class="got">${tc.t?'버프를 넣고 "적용"을 누르면 건설 시간과 필요한 가속, 건설 가속 점수를 계산합니다':'위에서 건물을 고르고 버프를 적용하면 이 날짜의 건설 가속 점수를 계산합니다'}</span></div>`}
   </div>
   <p class="hint-p">게임 영주 정보의 버프 화면에 나오는 "건설 속도 +N%"(섬·VIP 포함)를 넣고 "적용"을 누르면 실제 소요 시간 = 기본 시간 ÷ (1 + N%)로 계산하고, 그 시간을 전부 건설 가속으로 채운다고 보고 1분당 점수를 곱합니다. 버프 값은 모든 일차에 공통으로 적용됩니다.</p></div>`;
 }
