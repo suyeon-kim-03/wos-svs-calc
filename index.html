@@ -393,7 +393,7 @@ function bindFurnace(panel,d){
     const b=ds.builds[Number(el.dataset.build)], f=el.dataset.f;
     if(f!=='b'){
       const pre=()=>{ if(!b.from||!b.to){ b.from=bIdx(b.b,'8불'); b.to=bIdx(b.b,'10불'); panel.querySelectorAll(`select[data-build="${el.dataset.build}"]`).forEach(x=>{ if(x.dataset.f==='from') x.value=String(b.from); if(x.dataset.f==='to') x.value=String(b.to); }); save(); } };
-      el.addEventListener('pointerdown',pre); el.addEventListener('focus',pre); el.addEventListener('blur',()=>render());
+      el.addEventListener('pointerdown',pre); el.addEventListener('focus',pre); el.addEventListener('blur',deferRender);
     }
     el.addEventListener('change',e=>{
       if(f==='b'){ b.b=e.target.value; if(b.from){ b.from=bIdx(b.b,'8불'); b.to=Math.max(b.to,b.from+1); } }
@@ -407,7 +407,10 @@ function bindFurnace(panel,d){
   const add=panel.querySelector('[data-addbuild]'); if(add) add.addEventListener('click',()=>{ds.builds.push(freshBuild());save();render();});
   const clr=panel.querySelector('[data-clearbuild]'); if(clr) clr.addEventListener('click',()=>{if(!confirm('이 날짜의 건물 줄을 모두 초기화할까요? (첫 줄은 남고 나머지는 삭제됩니다)')) return; ds.builds=[{b:(ds.builds[0]&&ds.builds[0].b)||'furnace',from:0,to:0}]; save(); render();});
 }
+let _deferT=null;
+function deferRender(){clearTimeout(_deferT);_deferT=setTimeout(()=>{_deferT=null;render();},350);}
 function render(){
+  clearTimeout(_deferT);_deferT=null;
   renderTabs();
   const d=state.tab,day=DAYS[d-1],ds=state.days[d],total=dayTotal(d);
   let html=`<div class="day-head"><h2>${day.n}일차 ${day.ko}<small>${day.en}</small></h2><span class="num">${fmt(total)}</span></div>`;
@@ -442,7 +445,7 @@ function bind(panel,d){
     panel.querySelectorAll('select[data-charm][data-f="to"]').forEach(el=>{
       const pre=()=>{const c=ds.charms[Number(el.dataset.charm)]; if(c&&!Number(c.to||0)){c.to=CHARM_DEFAULT; el.value=String(CHARM_DEFAULT); save();}};
       el.addEventListener('pointerdown',pre); el.addEventListener('focus',pre);
-      el.addEventListener('blur',()=>render());
+      el.addEventListener('blur',deferRender);
     });
     panel.querySelectorAll('[data-charmdel]').forEach(b=>b.addEventListener('click',()=>{const i=Number(b.dataset.charmdel); if(i===0) ds.charms[0]={to:0}; else ds.charms.splice(i,1); save();render();}));
     panel.querySelector('[data-addcharm]').addEventListener('click',()=>{ds.charms.push(freshCharm());save();render();});
