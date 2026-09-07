@@ -223,25 +223,25 @@ const FURNACE_DEFAULT_FROM=FURNACE_MIN, FURNACE_DEFAULT_TO=FURNACE.findIndex(x=>
 function furnaceCost(from,to){let fc=0,r=0,n=0;for(let i=from+1;i<=to&&i<FURNACE.length;i++){fc+=FURNACE[i][1];r+=FURNACE[i][2];n++;}return {fc,r,n};}
 const CHARM_DEFAULT=CHARM_LEVELS.findIndex(L=>L.name==='12')+1; // 기본 선택 Lv.12
 const freshCharm=()=>({to:CHARM_DEFAULT});
-const freshDay=d=>({q:{}, ...(d===4?{troops:[{kind:'promote',from:9,to:10,n:0}]}:{}), ...([1,3,4].includes(d)?{charms:[freshCharm()]}:{})});
+const freshDay=d=>({q:{}, ...([1,2,5].includes(d)?{furnace:{from:FURNACE_DEFAULT_FROM,to:FURNACE_DEFAULT_TO}}:{}), ...(d===4?{troops:[{kind:'promote',from:9,to:10,n:0}]}:{}), ...([1,3,4].includes(d)?{charms:[freshCharm()]}:{})});
 const DAYS=[
   {n:1,ko:'도시 건설',en:'City Construction',
    groups:[['점수 항목',['refinedFC','fireCrystal','fcShard','spConstruction','spResearch','spTraining','spExpert']]],charm:true},
   {n:2,ko:'연구',en:'Research Day',
-   groups:[['점수 항목',['fcShard','spResearch','luckyWheel','rareShard','epicShard','mythicShard','expertSigil','bookOfKnowledge','gatherMeat','gatherWood','gatherCoal','gatherIron','fireCrystal','refinedFC','spConstruction','spTraining','spExpert']]]},
+   groups:[['점수 항목',['fcShard','spResearch','luckyWheel','rareShard','epicShard','mythicShard','expertSigil','bookOfKnowledge','gatherMeat','gatherWood','gatherCoal','gatherIron','fireCrystal','refinedFC','spConstruction','spTraining','spExpert']]],furnace:true},
   {n:3,ko:'야수 처치',en:'Beast Slay',
    groups:[['점수 항목',['polarTerror','beast1','beast11','beast16','beast21','beast26','petScore','advWildMark','commonWildMark','luckyWheel','rareShard','epicShard','mythicShard','expertSigil','bookOfKnowledge','spExpert']]],charm:true},
   {n:4,ko:'영웅 성장',en:'Hero Development · 병사 훈련',
    groups:[['점수 항목',['mithril','widget','essenceStone']]],troops:true,charm:true},
   {n:5,ko:'전투력 부스트',en:'Power Boost',
-   groups:[['점수 항목',['mithril','widget','essenceStone','chiefGear','petScore','advWildMark','commonWildMark','refinedFC','fireCrystal','fcShard','spConstruction','spResearch','spTraining','spExpert']]]},
+   groups:[['점수 항목',['mithril','widget','essenceStone','chiefGear','petScore','advWildMark','commonWildMark','refinedFC','fireCrystal','fcShard','spConstruction','spResearch','spTraining','spExpert']]],furnace:true},
 ];
 
 const KEY='wos-svs-prep-v1';
 let state=load();
 function load(){
-  try{const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s&&s.days){ if(!s.bonusDefault20){s.bonus=20;s.bonusDefault20=true;} if(!s.furnace||s.furnace.from<FURNACE_MIN) s.furnace={from:FURNACE_DEFAULT_FROM,to:FURNACE_DEFAULT_TO}; for(const d of [1,3,4]){ if(!s.days[d].charms) s.days[d].charms=[freshCharm()]; s.days[d].charms=s.days[d].charms.map(c=>({to:Number(c.to||c.lv||0)})); } return s; }}catch(e){}
-  return {tab:1,bonus:20,bonusDefault20:true,furnace:{from:FURNACE_DEFAULT_FROM,to:FURNACE_DEFAULT_TO},days:{1:freshDay(1),2:freshDay(2),3:freshDay(3),4:freshDay(4),5:freshDay(5)}};
+  try{const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s&&s.days){ if(s.tab===6) s.tab=1; if(!s.bonusDefault20){s.bonus=20;s.bonusDefault20=true;} for(const d of [1,3,4]){ if(!s.days[d].charms) s.days[d].charms=[freshCharm()]; s.days[d].charms=s.days[d].charms.map(c=>({to:Number(c.to||c.lv||0)})); } return s; }}catch(e){}
+  return {tab:1,bonus:20,bonusDefault20:true,days:{1:freshDay(1),2:freshDay(2),3:freshDay(3),4:freshDay(4),5:freshDay(5)}};
 }
 function save(){
   try{localStorage.setItem(KEY,JSON.stringify(state));document.getElementById('saved').textContent='자동 저장됨 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});}catch(e){}
@@ -283,10 +283,6 @@ function renderTabs(){
     b.onclick=()=>{state.tab=day.n;save();render();};
     el.appendChild(b);
   }
-  const fb=document.createElement('button'); fb.className='tab'; fb.setAttribute('role','tab'); fb.setAttribute('aria-selected',String(state.tab===6));
-  const fcst=furnaceCost(state.furnace.from,state.furnace.to);
-  fb.innerHTML=`<b>용광로</b><span>비용 계산</span><span class="num">${fmt(fcst.fc)} / ${fmt(fcst.r)}</span>`;
-  fb.onclick=()=>{state.tab=6;save();render();}; el.appendChild(fb);
   document.getElementById('grand').textContent=fmt(grand);
 }
 function timeParts(min){min=Number(min||0);return {d:Math.floor(min/1440),h:Math.floor(min%1440/60),m:Math.floor(min%60)};}
@@ -351,34 +347,41 @@ function charmsHTML(d){
     <div class="list-foot"><span class="foot-btns"><button type="button" class="mini" data-addcharm="${d}">+ 보석 추가</button><button type="button" class="mini clear" data-clearcharm="${d}">보석 전체 삭제</button></span><span class="got">보석 소계 <span class="num">${fmt(sub)}</span>점</span></div></div>
     <p class="hint-p">올릴 목표 단계를 고르면 "그 단계 평점 × ${fmt1(pt)}점"으로 계산합니다. 보석을 여러 개 올리거나 여러 단계를 올리면 "보석 추가"로 줄을 늘리세요. 단계별 평점은 게임의 "영주 보석 평점 상세정보"와 동일합니다.</p></div>`;
 }
-function renderFurnace(){
-  const f=state.furnace, c=furnaceCost(f.from,f.to), pt=mult();
-  if(f.from<FURNACE_MIN) f.from=FURNACE_MIN; if(f.to<=f.from) f.to=Math.min(FURNACE.length-1,f.from+1);
+function furnaceHTML(d){
+  const ds=state.days[d]; if(!ds.furnace) ds.furnace={from:FURNACE_DEFAULT_FROM,to:FURNACE_DEFAULT_TO};
+  const f=ds.furnace; if(f.from<FURNACE_MIN) f.from=FURNACE_MIN; if(f.to<=f.from) f.to=Math.min(FURNACE.length-1,f.from+1);
+  const c=furnaceCost(f.from,f.to), pt=mult();
   const opts=(sel,min)=>FURNACE.map((x,i)=>i<min?'':`<option value="${i}"${sel===i?' selected':''}>${x[0]}</option>`).join('');
-  // 정레벨 도달 기준으로 구간 묶기: 예) 6불 → 7불 (5단계)
   const groups=[]; for(let i=f.from+1;i<=f.to;i++){const name=FURNACE[i][0]; const target=name.includes('-')?null:name; let g=groups[groups.length-1]; if(!g||g.closed){g={start:FURNACE[i-1][0],fc:0,r:0,n:0,closed:false};groups.push(g);} g.fc+=FURNACE[i][1]; g.r+=FURNACE[i][2]; g.n++; g.last=name; if(target) g.closed=true;}
   const rows=groups.map(g=>`<div class="step"><span>${g.start} → ${g.last} (${g.n}단계)</span><span class="num">불수 ${fmt(g.fc)} · 제련 ${fmt(g.r)}</span></div>`).join('');
   const pts=c.fc*ITEMS.fireCrystal.pts*pt + c.r*ITEMS.refinedFC.pts*pt;
-  const html=`<div class="day-head"><h2>용광로 비용<small>불의 수정 · 제련된 불의 수정</small></h2></div>
-  <div class="section"><div class="list"><div class="row troops-like">
-    <div class="ctl charm-ctl" style="justify-content:flex-start;flex-wrap:wrap"><span class="lbl">현재</span><select id="fFrom">${opts(f.from,FURNACE_MIN)}</select><span class="lbl">→ 목표</span><select id="fTo">${opts(f.to,FURNACE_MIN+1)}</select></div>
-    <div class="fsum"><div><small>불의 수정</small><b class="num">${fmt(c.fc)}</b><span>개</span></div><div><small>제련된 불의 수정</small><b class="num">${fmt(c.r)}</b><span>개</span></div><div><small>단계 수</small><b class="num">${c.n}</b><span>단계</span></div></div>
-    ${rows?`<div class="steps">${rows}</div>`:'<div class="got">목표를 현재보다 높게 고르세요</div>'}
-    <div class="got">이 수량을 전부 쓰면 1·5일차 점수 <span class="num">${fmt(pts)}</span>점 (불수 ${fmt1(up(ITEMS.fireCrystal.pts))}점 · 제련 ${fmt1(up(ITEMS.refinedFC.pts))}점 기준)</div>
-  </div><div class="list-foot"><span class="foot-btns"><button type="button" class="mini" data-applyf="1">1일차 수량에 넣기</button><button type="button" class="mini" data-applyf="5">5일차 수량에 넣기</button></span></div></div>
-  <p class="hint-p">각 정레벨은 5단계(예: 6불-1 ~ 6불-4, 7불)로 나뉘며 앞 4단계와 마지막 단계의 비용이 다릅니다. 8불→10불 합계는 불의 수정 2,835개 · 제련 600개입니다. "수량에 넣기"를 누르면 그 날짜의 불의 수정·제련된 불의 수정 입력칸에 이 수량이 들어갑니다.</p></div>`;
-  const panel=document.getElementById('panel'); panel.innerHTML=html;
-  document.getElementById('resetDay').textContent='용광로 선택 초기화';
-  panel.querySelector('#fFrom').addEventListener('change',e=>{f.from=Number(e.target.value); if(f.to<=f.from) f.to=Math.min(FURNACE.length-1,f.from+1); save(); render();});
-  panel.querySelector('#fTo').addEventListener('change',e=>{f.to=Number(e.target.value); if(f.to<=f.from) f.from=Math.max(FURNACE_MIN,f.to-1); save(); render();});
-  panel.querySelectorAll('[data-applyf]').forEach(b=>b.addEventListener('click',()=>{const d=Number(b.dataset.applyf),q=state.days[d].q; if((q.fireCrystal||q.refinedFC)&&!confirm(`${d}일차에 이미 입력된 불의 수정 수량을 덮어쓸까요?`)) return; q.fireCrystal=c.fc; q.refinedFC=c.r; state.tab=d; save(); render(); window.scrollTo(0,0);}));
+  const applied=Number(ds.q.fireCrystal||0)===c.fc&&Number(ds.q.refinedFC||0)===c.r;
+  return `<div class="section"><h3>용광로 비용 → 불의 수정 수량</h3><div class="list"><div class="row troops-like">
+    <div class="ctl charm-ctl" style="justify-content:flex-start;flex-wrap:wrap"><span class="lbl">현재</span><select data-furn="from">${opts(f.from,FURNACE_MIN)}</select><span class="lbl">→ 목표</span><select data-furn="to">${opts(f.to,FURNACE_MIN+1)}</select></div>
+    <div class="fsum"><div><small>불의 수정</small><b class="num">${fmt(c.fc)}</b><span>개</span></div><div><small>제련된 불의 수정</small><b class="num">${fmt(c.r)}</b><span>개</span></div><div><small>점수 환산</small><b class="num">${fmt(pts)}</b><span>점</span></div></div>
+    ${rows?`<div class="steps">${rows}</div>`:''}
+  </div><div class="list-foot"><span class="foot-btns"><button type="button" class="mini" data-furnapply="${d}">${applied?'✓ 아래 수량에 들어가 있음':'아래 불의 수정·제련 수량에 넣기'}</button></span></div></div></div>`;
+}
+function bindFurnace(panel,d){
+  const ds=state.days[d], f=ds.furnace;
+  panel.querySelectorAll('select[data-furn]').forEach(el=>el.addEventListener('change',e=>{
+    const k=e.target.dataset.furn; f[k]=Number(e.target.value);
+    if(k==='from'&&f.to<=f.from) f.to=Math.min(FURNACE.length-1,f.from+1);
+    if(k==='to'&&f.to<=f.from) f.from=Math.max(FURNACE_MIN,f.to-1);
+    save(); render();
+  }));
+  const b=panel.querySelector('[data-furnapply]'); if(b) b.addEventListener('click',()=>{
+    const c=furnaceCost(f.from,f.to), q=ds.q;
+    if((q.fireCrystal||q.refinedFC)&&(Number(q.fireCrystal||0)!==c.fc||Number(q.refinedFC||0)!==c.r)&&!confirm('이미 입력된 불의 수정 수량을 덮어쓸까요?')) return;
+    q.fireCrystal=c.fc; q.refinedFC=c.r; save(); render();
+  });
 }
 function render(){
   renderTabs();
-  if(state.tab===6){renderFurnace();return;}
   const d=state.tab,day=DAYS[d-1],ds=state.days[d],total=dayTotal(d);
   let html=`<div class="day-head"><h2>${day.n}일차 ${day.ko}<small>${day.en}</small></h2><span class="num">${fmt(total)}</span></div>`;
   if(day.charm) html+=charmsHTML(d);
+  if(day.furnace) html+=furnaceHTML(d);
   for(const [title,ids] of day.groups){
     html+=`<div class="section"><h3>${title}</h3><div class="list">${ids.map(id=>rowHTML(d,id,false)).join('')}</div></div>`;
   }
@@ -398,6 +401,7 @@ function bind(panel,d){
   panel.querySelectorAll('button[data-step]').forEach(b=>b.addEventListener('click',()=>{
     const id=b.dataset.step; ds.q[id]=Math.max(0,qty(d,id)+Number(b.dataset.dir)); save(); render();
   }));
+  if(DAYS[d-1].furnace) bindFurnace(panel,d);
   if(DAYS[d-1].charm){
     panel.querySelectorAll('[data-charm]').forEach(el=>el.addEventListener(el.tagName==='SELECT'?'change':'input',e=>{
       const c=ds.charms[Number(e.target.dataset.charm)],f=e.target.dataset.f;
@@ -438,7 +442,7 @@ document.getElementById('bonusDown').onclick=()=>{state.bonus=Math.max(0,Number(
 document.getElementById('bonusUp').onclick=()=>{state.bonus=Math.min(20,Number(state.bonus||0)+2);syncBonus();save();render();};
 syncBonus();
 document.getElementById('resetDay').onclick=()=>{
-  const d=state.tab; if(d===6){state.furnace={from:FURNACE_DEFAULT_FROM,to:FURNACE_DEFAULT_TO};save();render();return;} if(!confirm(`${d}일차 입력을 모두 지울까요?`)) return;
+  const d=state.tab; if(!confirm(`${d}일차 입력을 모두 지울까요?`)) return;
   state.days[d]=freshDay(d); save(); render();
 };
 document.getElementById('resetAll').onclick=()=>{
