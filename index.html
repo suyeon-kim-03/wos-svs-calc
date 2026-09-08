@@ -655,9 +655,9 @@ function syncBonus(){bonusEl.value=Number(state.bonus||0);}
 document.getElementById('bonusDown').onclick=()=>{state.bonus=Math.max(0,Number(state.bonus||0)-2);syncBonus();save();render();};
 document.getElementById('bonusUp').onclick=()=>{state.bonus=Math.min(20,Number(state.bonus||0)+2);syncBonus();save();render();};
 syncBonus();
-document.getElementById('resetDay').onclick=()=>{ const d=state.tab; if(!confirm(`${d}일차 입력을 모두 지울까요?`)) return; state.days[d]=freshDay(d); save(); render(); };
+document.getElementById('resetDay').onclick=()=>{ const d=state.tab; if(!confirm(`${d}일차 입력을 모두 지울까요?`)) return; state.days[d]=freshDay(d); if(state.days[d].charms) state.days[d].charms=[{to:0}]; save(); render(); }; // 지우기 후에는 보석도 '선택 안 함'(0점)
 document.getElementById('resetAll').onclick=()=>{ if(!confirm('5일치 입력을 모두 지울까요?')) return;
-  const b=state.bonus; try{localStorage.removeItem(KEY);}catch(e){} state=load(); state.bonus=b; syncBonus(); save(); render();
+  const b=state.bonus; try{localStorage.removeItem(KEY);}catch(e){} state=load(); state.bonus=b; for(const d of [1,3,4]) if(state.days[d].charms) state.days[d].charms=[{to:0}]; syncBonus(); save(); render();
 };
 render();
 </script>
