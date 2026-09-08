@@ -315,7 +315,7 @@ function waCost(r){const it=waItem(r);if(!it||r.to<=r.from) return {sh:0,sec:0};
 const waTotal=d=>(state.days[d].wa||[]).reduce((a,r)=>{const c=waCost(r);return {sh:a.sh+c.sh,sec:a.sec+c.sec};},{sh:0,sec:0});
 function fcShardPts(d){return waTotal(d).sh*up(ITEMS.fcShard.pts);}
 const hasWaRow=d=>(state.days[d].rs||[]).some(r=>r.wa);
-const rsTotal=d=>(state.days[d].rs||[]).reduce((a,r)=>a+(r.wa?waTotal(d).sec:rsSecs(r)),0); // 조각 연구는 '연구 추가'처럼 줄로 넣음
+const rsTotal=d=>(state.days[d].rs||[]).reduce((a,r)=>a+(r.wa?Number(r.sec||0):rsSecs(r)),0); // 조각 연구 시간은 '연구 시간 추가' 버튼으로 넣은 값(스냅샷)
 const rMins=d=>{const base=rsTotal(d);return base&&rApplied()!==null?base/(1+rApplied()/100)/60:0;};
 function researchPts(d){return rMins(d)*up(ITEMS.spResearch.pts);}
 const CHARM_DEFAULT=CHARM_LEVELS.findIndex(L=>L.name==='12')+1; // 기본 선택 Lv.12
@@ -497,10 +497,10 @@ function waHTML(d){
   return `<div class="section"><h3>불의 수정 조각 연구 · 조각 1개 ${fmt1(shPt)}점</h3><div class="list">
     ${rows}
     <div class="list-foot"><span class="foot-btns"><button type="button" class="mini" data-addwa="${d}">+ 연구 추가</button><button type="button" class="mini clear" data-clearwa="${d}">연구 전체 초기화</button></span></div>
-    ${tot.sh?`<div class="bsum"><div class="fsum two"><div><small>불의 수정 조각 합계</small><b class="num">${fmt(tot.sh)}<em>개</em></b><span>× ${fmt1(shPt)}점 = <strong class="num">${fmt(pts)}</strong>점</span></div><div><small>연구 기본 시간 합계</small><b class="num" style="font-size:16px">${fmtDur(tot.sec)}</b><span>아래 연구 가속 카드에서 "+ 조각 연구 시간 넣기"</span></div></div>
+    ${tot.sh?`<div class="bsum"><div class="fsum two"><div><small>불의 수정 조각 합계</small><b class="num">${fmt(tot.sh)}<em>개</em></b><span>× ${fmt1(shPt)}점 = <strong class="num">${fmt(pts)}</strong>점</span></div><div><small>연구 기본 시간 합계</small><b class="num" style="font-size:16px">${fmtDur(tot.sec)}</b><span><button type="button" class="mini" data-addwatime="${d}" style="margin-top:4px">${(ds.rs||[]).some(r=>r.wa&&Number(r.sec)===tot.sec)?'✓ 연구 시간 들어감':'연구 시간 추가'}</button></span></div></div>
     <div class="ftotal"><span>조각 합계</span><span class="num">${fmt(pts)}<small>점</small></span></div></div>`:`<div class="list-foot"><span class="got">전쟁 아카데미 연구 항목과 현재·목표 레벨을 고르면 불의 수정 조각 점수를 계산하고, 연구 시간은 아래 연구 가속 계산에 더해집니다</span></div>`}
   </div>
-  <p class="hint-p">전쟁 아카데미(T11 헬리오스 · T12) 연구는 불의 수정 조각을 소모하며 조각 1개당 점수가 붙습니다. T11 항목 이름과 조각 수는 게임 기준으로 확인한 값이며, 창병·궁병은 방패병과 비용이 같습니다. 이 연구의 기본 시간은 아래 "연구 가속 아이템" 카드에서 "+ 조각 연구 시간 넣기"를 누르면 줄로 들어가 연구 시간에 합산되고, 삭제하면 빠집니다.</p></div>`;
+  <p class="hint-p">전쟁 아카데미(T11 헬리오스 · T12) 연구는 불의 수정 조각을 소모하며 조각 1개당 점수가 붙습니다. T11 항목 이름과 조각 수는 게임 기준으로 확인한 값이며, 창병·궁병은 방패병과 비용이 같습니다. "연구 시간 추가"를 누르면 이 연구의 기본 시간이 아래 "연구 가속 아이템" 카드에 연구 한 줄로 들어가 합산되고, 그 줄을 삭제하면 빠집니다. 항목을 바꾼 뒤 다시 누르면 시간이 갱신됩니다.</p></div>`;
 }
 function bindWa(panel,d){
   const ds=state.days[d];
@@ -513,6 +513,7 @@ function bindWa(panel,d){
   }));
   panel.querySelectorAll('[data-wadel]').forEach(b=>b.addEventListener('click',()=>{const i=Number(b.dataset.wadel); if(i===0) ds.wa[0]=freshWa(); else ds.wa.splice(i,1); save(); render();}));
   const add=panel.querySelector('[data-addwa]'); if(add) add.addEventListener('click',()=>{ds.wa.push(freshWa()); save(); render();});
+  const at=panel.querySelector('[data-addwatime]'); if(at) at.addEventListener('click',()=>{ const sec=waTotal(d).sec; if(!ds.rs) ds.rs=[freshRs()]; const ex=ds.rs.find(r=>r.wa); if(ex) ex.sec=sec; else ds.rs.push({wa:true,sec}); save(); render(); });
   const clr=panel.querySelector('[data-clearwa]'); if(clr) clr.addEventListener('click',()=>{ if(!confirm('이 날짜의 불의 수정 조각 연구 줄을 모두 초기화할까요? (첫 줄은 남고 나머지는 삭제됩니다)')) return; ds.wa=[freshWa()]; save(); render();});
 }
 function researchHTML(d){
@@ -520,7 +521,7 @@ function researchHTML(d){
   const applied=rApplied(), pct=applied||0, dirty=rDirty(), base=rsTotal(d), mins=rMins(d), spPt=up(ITEMS.spResearch.pts), pts=researchPts(d);
   const title=`연구 버프 +${fmt1(pct)}%`;
   const rows=ds.rs.map((r,i)=>{
-    if(r.wa){ const t=waTotal(d).sec; return `<div class="row troops-like${t?' active':''}"><div class="ctl build-ctl"><span class="lbl">연구</span><span class="lbl" style="font-weight:600">불의 수정 조각 연구 시간</span><span class="got" style="margin-left:8px">기본 시간 <span class="num">${fmtDur(t)}</span>${t?'':' · 위 조각 연구 카드에서 항목을 고르세요'}</span><button type="button" class="x" data-rsdel="${i}" aria-label="조각 연구 시간 줄 삭제">✕ 삭제</button></div></div>`; }
+    if(r.wa){ const t=Number(r.sec||0); return `<div class="row troops-like${t?' active':''}"><div class="ctl build-ctl"><span class="lbl">연구</span><span class="lbl" style="font-weight:600">불의 수정 조각 연구</span><span class="got" style="margin-left:8px">기본 시간 <span class="num">${fmtDur(t)}</span></span><button type="button" class="x" data-rsdel="${i}" aria-label="조각 연구 시간 줄 삭제">✕ 삭제</button></div></div>`; }
     if(!RESEARCH[r.tree]) r.tree='Growth';
     const it=rsItem(r), max=it?it[1].length:0; if(r.to>max) r.to=max; if(r.from>=r.to) r.from=Math.min(r.from,Math.max(0,r.to-1));
     const topts=RTREES.map(t=>`<option value="${t}"${r.tree===t?' selected':''}>${RESEARCH[t].ko}</option>`).join('');
@@ -533,7 +534,7 @@ function researchHTML(d){
   return `<div class="section"><h3>과학 기술 연구 가속 아이템 · ${title} · 1분 ${fmt1(spPt)}점</h3><div class="list">
     <div class="row troops-like"><div class="speed-grid two"><label><span>연구 버프</span><span class="pct"><input type="text" class="n" inputmode="decimal" data-rpct="1" value="${(state.research.pct||'')}" placeholder="0"><em>%</em></span></label><label class="chk"><input type="checkbox" id="rMinisterChk"${state.research.minister?' checked':''}><span>집행관 버프 <b>+${MINISTER_PCT}%</b></span></label></div></div>
     ${rows}
-    <div class="list-foot"><span class="foot-btns"><button type="button" class="mini" data-addrs="${d}">+ 연구 추가</button><button type="button" class="mini" data-addwars="${d}"${hasWaRow(d)?' disabled':''}>${hasWaRow(d)?'✓ 조각 연구 시간 들어감':'+ 조각 연구 시간 넣기'}</button><button type="button" class="mini clear" data-clearrs="${d}">연구 전체 초기화</button></span></div>
+    <div class="list-foot"><span class="foot-btns"><button type="button" class="mini" data-addrs="${d}">+ 연구 추가</button><button type="button" class="mini clear" data-clearrs="${d}">연구 전체 초기화</button></span></div>
     ${base?`<div class="bsum"><div class="speed-res"><div><small>기본 연구 시간${hasWaRow(d)&&waTotal(d).sec?' <em style="font-style:normal">(조각 연구 포함)</em>':''}</small><b>${fmtDur(base)}</b></div><div><small>버프 적용 후</small><b>${fmtDur(mins*60)}</b></div><div><small>필요 연구 가속</small><b>${fmt1(mins)}분</b></div></div>
     <div class="ftotal"><span>연구 가속 점수 <small style="font-weight:400;color:var(--muted)">${fmt1(mins)}분 × ${fmt1(spPt)}점</small></span><span class="num">${fmt(pts)}<small>점</small></span></div></div>`:`<div class="list-foot"><span class="got">연구 항목과 현재·목표 레벨을 고르면 이 날짜의 연구 가속 점수를 계산합니다</span></div>`}
   </div>
@@ -551,7 +552,6 @@ function bindResearch(panel,d){
     save(); render();
   }));
   panel.querySelectorAll('[data-rsdel]').forEach(b=>b.addEventListener('click',()=>{const i=Number(b.dataset.rsdel); if(ds.rs[i]&&ds.rs[i].wa){ ds.rs.splice(i,1); if(!ds.rs.length) ds.rs=[freshRs()]; } else if(i===0) ds.rs[0]=freshRs(); else ds.rs.splice(i,1); save(); render();}));
-  const aw=panel.querySelector('[data-addwars]'); if(aw) aw.addEventListener('click',()=>{ if(!hasWaRow(d)) ds.rs.push({wa:true}); save(); render(); });
   const add=panel.querySelector('[data-addrs]'); if(add) add.addEventListener('click',()=>{ds.rs.push(freshRs()); save(); render();});
   const clr=panel.querySelector('[data-clearrs]'); if(clr) clr.addEventListener('click',()=>{ if(!confirm('이 날짜의 연구 줄을 모두 초기화할까요? (첫 줄은 남고 나머지는 삭제됩니다)')) return; ds.rs=[freshRs()]; save(); render();});
 }
