@@ -314,7 +314,8 @@ const waOn=r=>!!waItem(r)&&r.to>r.from;
 function waCost(r){const it=waItem(r);if(!it||r.to<=r.from) return {sh:0,sec:0};let sh=0,sec=0;for(let i=r.from;i<r.to&&i<it[1].length;i++){sh+=it[1][i][0];sec+=it[1][i][1];}return {sh,sec};}
 const waTotal=d=>(state.days[d].wa||[]).reduce((a,r)=>{const c=waCost(r);return {sh:a.sh+c.sh,sec:a.sec+c.sec};},{sh:0,sec:0});
 function fcShardPts(d){return waTotal(d).sh*up(ITEMS.fcShard.pts);}
-const rsTotal=d=>(state.days[d].rs||[]).reduce((a,r)=>a+rsSecs(r),0)+waTotal(d).sec; // 연구 시간에 불의 수정 조각 연구 포함
+const waInc=d=>state.days[d].rsIncludeWa!==false; // 조각 연구 시간을 연구 가속에 포함할지(기본 포함)
+const rsTotal=d=>(state.days[d].rs||[]).reduce((a,r)=>a+rsSecs(r),0)+(waInc(d)?waTotal(d).sec:0);
 const rMins=d=>{const base=rsTotal(d);return base&&rApplied()!==null?base/(1+rApplied()/100)/60:0;};
 function researchPts(d){return rMins(d)*up(ITEMS.spResearch.pts);}
 const CHARM_DEFAULT=CHARM_LEVELS.findIndex(L=>L.name==='12')+1; // 기본 선택 Lv.12
@@ -496,10 +497,10 @@ function waHTML(d){
   return `<div class="section"><h3>불의 수정 조각 연구 · 조각 1개 ${fmt1(shPt)}점</h3><div class="list">
     ${rows}
     <div class="list-foot"><span class="foot-btns"><button type="button" class="mini" data-addwa="${d}">+ 연구 추가</button><button type="button" class="mini clear" data-clearwa="${d}">연구 전체 초기화</button></span></div>
-    ${tot.sh?`<div class="bsum"><div class="fsum two"><div><small>불의 수정 조각 합계</small><b class="num">${fmt(tot.sh)}<em>개</em></b><span>× ${fmt1(shPt)}점 = <strong class="num">${fmt(pts)}</strong>점</span></div><div><small>연구 기본 시간 합계</small><b class="num" style="font-size:16px">${fmtDur(tot.sec)}</b><span>아래 연구 가속 계산에 포함</span></div></div>
+    ${tot.sh?`<div class="bsum"><div class="fsum two"><div><small>불의 수정 조각 합계</small><b class="num">${fmt(tot.sh)}<em>개</em></b><span>× ${fmt1(shPt)}점 = <strong class="num">${fmt(pts)}</strong>점</span></div><div><small>연구 기본 시간 합계</small><b class="num" style="font-size:16px">${fmtDur(tot.sec)}</b><span>아래 연구 가속 카드에서 넣기/빼기 선택</span></div></div>
     <div class="ftotal"><span>조각 합계</span><span class="num">${fmt(pts)}<small>점</small></span></div></div>`:`<div class="list-foot"><span class="got">전쟁 아카데미 연구 항목과 현재·목표 레벨을 고르면 불의 수정 조각 점수를 계산하고, 연구 시간은 아래 연구 가속 계산에 더해집니다</span></div>`}
   </div>
-  <p class="hint-p">전쟁 아카데미(T11 헬리오스 · T12) 연구는 불의 수정 조각을 소모하며 조각 1개당 점수가 붙습니다. T11 항목 이름과 조각 수는 게임 기준으로 확인한 값이며, 창병·궁병은 방패병과 비용이 같습니다. 이 연구의 기본 시간은 아래 "연구 가속 아이템" 카드의 연구 시간에 자동으로 합산됩니다.</p></div>`;
+  <p class="hint-p">전쟁 아카데미(T11 헬리오스 · T12) 연구는 불의 수정 조각을 소모하며 조각 1개당 점수가 붙습니다. T11 항목 이름과 조각 수는 게임 기준으로 확인한 값이며, 창병·궁병은 방패병과 비용이 같습니다. 이 연구의 기본 시간은 아래 "연구 가속 아이템" 카드의 "불의 수정 조각 연구 시간 넣기"를 체크하면 연구 시간에 합산됩니다(기본 체크).</p></div>`;
 }
 function bindWa(panel,d){
   const ds=state.days[d];
@@ -530,9 +531,10 @@ function researchHTML(d){
   }).join('');
   return `<div class="section"><h3>과학 기술 연구 가속 아이템 · ${title} · 1분 ${fmt1(spPt)}점</h3><div class="list">
     <div class="row troops-like"><div class="speed-grid two"><label><span>연구 버프</span><span class="pct"><input type="text" class="n" inputmode="decimal" data-rpct="1" value="${(state.research.pct||'')}" placeholder="0"><em>%</em></span></label><label class="chk"><input type="checkbox" id="rMinisterChk"${state.research.minister?' checked':''}><span>집행관 버프 <b>+${MINISTER_PCT}%</b></span></label></div></div>
+    ${waTotal(d).sec?`<div class="row troops-like${waInc(d)?' active':''}"><div class="ctl build-ctl"><label class="chk"><input type="checkbox" id="rsIncWa"${waInc(d)?' checked':''}><span>불의 수정 조각 연구 시간 넣기</span></label><span class="got" style="margin-left:auto">기본 시간 <span class="num">${fmtDur(waTotal(d).sec)}</span>${waInc(d)?' · 포함됨':' · 제외됨'}</span></div></div>`:''}
     ${rows}
     <div class="list-foot"><span class="foot-btns"><button type="button" class="mini" data-addrs="${d}">+ 연구 추가</button><button type="button" class="mini clear" data-clearrs="${d}">연구 전체 초기화</button></span></div>
-    ${base?`<div class="bsum"><div class="speed-res"><div><small>기본 연구 시간 <em style="font-style:normal">(조각 연구 포함)</em></small><b>${fmtDur(base)}</b></div><div><small>버프 적용 후</small><b>${fmtDur(mins*60)}</b></div><div><small>필요 연구 가속</small><b>${fmt1(mins)}분</b></div></div>
+    ${base?`<div class="bsum"><div class="speed-res"><div><small>기본 연구 시간${waInc(d)&&waTotal(d).sec?' <em style="font-style:normal">(조각 연구 포함)</em>':''}</small><b>${fmtDur(base)}</b></div><div><small>버프 적용 후</small><b>${fmtDur(mins*60)}</b></div><div><small>필요 연구 가속</small><b>${fmt1(mins)}분</b></div></div>
     <div class="ftotal"><span>연구 가속 점수 <small style="font-weight:400;color:var(--muted)">${fmt1(mins)}분 × ${fmt1(spPt)}점</small></span><span class="num">${fmt(pts)}<small>점</small></span></div></div>`:`<div class="list-foot"><span class="got">연구 항목과 현재·목표 레벨을 고르면 이 날짜의 연구 가속 점수를 계산합니다</span></div>`}
   </div>
   <p class="hint-p">연구 버프(게임 영주 정보의 "연구 속도 +N%")를 넣으면 실제 시간 = 기본 시간 ÷ (1 + N%)로 계산하고, 그 시간을 전부 연구 가속으로 채운다고 보고 1분당 점수를 곱합니다. 여러 연구는 "연구 추가"로 줄을 늘리세요.</p></div>`;
@@ -541,6 +543,7 @@ function bindResearch(panel,d){
   const ds=state.days[d];
   const pi=panel.querySelector('input[data-rpct]'); if(pi) pi.addEventListener('input',e=>{state.research.pct=num(e.target.value); save(); softUpdate();});
   const mc=panel.querySelector('#rMinisterChk'); if(mc) mc.addEventListener('change',e=>{state.research.minister=!!e.target.checked; save(); render();});
+  const iw=panel.querySelector('#rsIncWa'); if(iw) iw.addEventListener('change',e=>{ds.rsIncludeWa=!!e.target.checked; save(); render();});
   panel.querySelectorAll('select[data-rs]').forEach(el=>el.addEventListener('change',e=>{
     const r=ds.rs[Number(el.dataset.rs)], f=el.dataset.f, v=e.target.value;
     if(f==='tree'){ r.tree=v; r.item=-1; r.from=0; r.to=0; }
